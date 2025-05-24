@@ -1,3 +1,7 @@
+#important 
+run mvn clean install
+ to run project  mvn compile exec:java
+
 # E-Commerce Swing Application
 
 A simple e-commerce application built with Java Swing and MySQL.
@@ -30,3 +34,5 @@ A simple e-commerce application built with Java Swing and MySQL.
   - `models/` - Data models
   - `services/` - Business logic
   - `database/` - Database connection and queries 
+
+

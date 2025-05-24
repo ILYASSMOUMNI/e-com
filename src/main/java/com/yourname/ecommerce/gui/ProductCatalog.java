@@ -1,6 +1,7 @@
 package com.yourname.ecommerce.gui;
 
 import com.yourname.ecommerce.models.Product;
+import com.yourname.ecommerce.models.Category;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
@@ -12,10 +13,11 @@ public class ProductCatalog extends JFrame {
     
     public ProductCatalog() {
         products = new ArrayList<>();
+        Category defaultCategory = new com.yourname.ecommerce.models.Category(0, "Default", "Default Category");
         // Add some sample products
-        products.add(new Product(1, "Laptop", "High-performance laptop", 999.99, 10, ""));
-        products.add(new Product(2, "Smartphone", "Latest model smartphone", 699.99, 15, ""));
-        products.add(new Product(3, "Headphones", "Wireless noise-cancelling headphones", 199.99, 20, ""));
+        products.add(new Product(1, "Laptop", "High-performance laptop", 999.99, 10, "", defaultCategory));
+        products.add(new Product(2, "Smartphone", "Latest model smartphone", 699.99, 15, "", defaultCategory));
+        products.add(new Product(3, "Headphones", "Wireless noise-cancelling headphones", 199.99, 20, "", defaultCategory));
         
         initializeUI();
     }
