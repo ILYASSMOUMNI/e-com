@@ -1,7 +1,9 @@
 #important 
 run mvn clean install
- to run project  mvn compile exec:java
+to run project  mvn compile exec:java
 
+add mysql db ecommerce
+go to src/recources . copy paste l base donnees
 # E-Commerce Swing Application
 
 A simple e-commerce application built with Java Swing and MySQL.
