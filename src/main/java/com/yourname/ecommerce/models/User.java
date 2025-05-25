@@ -23,6 +23,10 @@ public class User {
         ADMIN
     }
 
+    public User() {
+        this.role = UserRole.CUSTOMER;
+    }
+
     public User(int id, String username, String email, String passwordHash, String firstName, 
                 String lastName, String phone, UserRole role) {
         this.id = id;

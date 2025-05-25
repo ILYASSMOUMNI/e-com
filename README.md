@@ -1,6 +1,7 @@
 #important 
 run mvn clean install
  to run project  mvn compile exec:java
+ 
 
 # E-Commerce Swing Application
 

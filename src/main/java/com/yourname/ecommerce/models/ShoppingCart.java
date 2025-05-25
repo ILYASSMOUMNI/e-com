@@ -12,6 +12,9 @@ public class ShoppingCart {
     private Date createdAt;
     private Date updatedAt;
     private boolean isActive;
+    private double totalAmount;
+    private double taxAmount;
+    private static final double TAX_RATE = 0.20; // 20% tax rate
 
     public ShoppingCart(int id, User user) {
         this.id = id;
@@ -20,6 +23,8 @@ public class ShoppingCart {
         this.createdAt = new Date();
         this.updatedAt = new Date();
         this.isActive = true;
+        this.totalAmount = 0.0;
+        this.taxAmount = 0.0;
     }
 
     // Getters and Setters
@@ -44,22 +49,30 @@ public class ShoppingCart {
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
 
+    public double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public double getTaxAmount() {
+        return taxAmount;
+    }
+
     // Cart Operations
     public void addItem(Product product, int quantity) {
-        Optional<CartItem> existingItem = items.stream()
-            .filter(item -> item.getProduct().getId() == product.getId())
-            .findFirst();
-
-        if (existingItem.isPresent()) {
-            existingItem.get().incrementQuantity(quantity);
+        CartItem existingItem = findItem(product);
+        if (existingItem != null) {
+            existingItem.setQuantity(existingItem.getQuantity() + quantity);
         } else {
-            items.add(new CartItem(items.size() + 1, product, quantity));
+            CartItem newItem = new CartItem(items.size() + 1, product, quantity);
+            items.add(newItem);
         }
+        calculateTotals();
         this.updatedAt = new Date();
     }
 
     public void removeItem(int productId) {
         items.removeIf(item -> item.getProduct().getId() == productId);
+        calculateTotals();
         this.updatedAt = new Date();
     }
 
@@ -74,29 +87,31 @@ public class ShoppingCart {
                     item.setQuantity(quantity);
                 }
             });
+        calculateTotals();
         this.updatedAt = new Date();
     }
 
     public void clear() {
         items.clear();
+        calculateTotals();
         this.updatedAt = new Date();
     }
 
     // Calculations
     public double getSubtotal() {
-        return items.stream().mapToDouble(CartItem::getSubtotal).sum();
+        return totalAmount - taxAmount;
     }
 
     public double getTax() {
-        return items.stream().mapToDouble(CartItem::getTaxAmount).sum();
+        return taxAmount;
     }
 
     public double getTotal() {
-        return getSubtotal() + getTax();
+        return totalAmount;
     }
 
     public int getItemCount() {
-        return items.stream().mapToInt(CartItem::getQuantity).sum();
+        return items.size();
     }
 
     public boolean isEmpty() {
@@ -112,6 +127,20 @@ public class ShoppingCart {
             .filter(item -> item.getProduct().getId() == productId)
             .findFirst()
             .orElse(null);
+    }
+
+    private CartItem findItem(Product product) {
+        return items.stream()
+                .filter(item -> item.getProduct().getId() == product.getId())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void calculateTotals() {
+        totalAmount = items.stream()
+                .mapToDouble(item -> item.getProduct().getPrice() * item.getQuantity())
+                .sum();
+        taxAmount = totalAmount * TAX_RATE;
     }
 
     @Override

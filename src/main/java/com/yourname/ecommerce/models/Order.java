@@ -19,6 +19,9 @@ public class Order {
     private PaymentMethod paymentMethod;
     private String trackingNumber;
     private String notes;
+    private double totalAmount;
+    private Date orderDate;
+    private String transactionId;
 
     public enum OrderStatus {
         PENDING,
@@ -37,6 +40,14 @@ public class Order {
         BANK_TRANSFER
     }
 
+    public Order() {
+        this.items = new ArrayList<>();
+        this.status = OrderStatus.PENDING;
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+        this.orderDate = new Date();
+    }
+
     public Order(int id, User user, List<CartItem> items, Address shippingAddress, 
                 Address billingAddress, PaymentMethod paymentMethod) {
         this.id = id;
@@ -48,6 +59,7 @@ public class Order {
         this.status = OrderStatus.PENDING;
         this.createdAt = new Date();
         this.updatedAt = new Date();
+        this.orderDate = new Date();
         calculateTotals();
     }
 
@@ -99,6 +111,15 @@ public class Order {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public double getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }
+
+    public Date getOrderDate() { return orderDate; }
+    public void setOrderDate(Date orderDate) { this.orderDate = orderDate; }
+
+    public String getTransactionId() { return transactionId; }
+    public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
 
     private void calculateTotals() {
         subtotal = items.stream().mapToDouble(CartItem::getSubtotal).sum();

@@ -1,6 +1,6 @@
 package com.yourname.ecommerce.main;
 
-import com.yourname.ecommerce.gui.LoginForm;
+import com.yourname.ecommerce.gui.MainFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -12,8 +12,8 @@ public class Main {
             
             // Start the application on the Event Dispatch Thread
             SwingUtilities.invokeLater(() -> {
-                LoginForm loginForm = new LoginForm();
-                loginForm.setVisible(true);
+                MainFrame mainFrame = new MainFrame();
+                mainFrame.setVisible(true);
             });
         } catch (Exception e) {
             e.printStackTrace();

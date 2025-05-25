@@ -1,87 +1,145 @@
 package com.yourname.ecommerce.gui;
 
 import com.yourname.ecommerce.models.Product;
-import com.yourname.ecommerce.models.Category;
+import com.yourname.ecommerce.services.ProductService;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
-public class ProductCatalog extends JFrame {
-    private List<Product> products;
-    private JPanel productPanel;
-    
+public class ProductCatalog extends JPanel {
+    private JPanel productsPanel;
+    private JButton viewCartButton;
+    private List<Runnable> viewCartListeners;
+    private List<Consumer<Product>> productClickListeners;
+    private ProductService productService;
+    private JComboBox<String> categoryFilter;
+
     public ProductCatalog() {
-        products = new ArrayList<>();
-        Category defaultCategory = new com.yourname.ecommerce.models.Category(0, "Default", "Default Category");
-        // Add some sample products
-        products.add(new Product(1, "Laptop", "High-performance laptop", 999.99, 10, "", defaultCategory));
-        products.add(new Product(2, "Smartphone", "Latest model smartphone", 699.99, 15, "", defaultCategory));
-        products.add(new Product(3, "Headphones", "Wireless noise-cancelling headphones", 199.99, 20, "", defaultCategory));
-        
-        initializeUI();
+        setLayout(new BorderLayout());
+        viewCartListeners = new ArrayList<>();
+        productClickListeners = new ArrayList<>();
+        productService = new ProductService();
+        initializeComponents();
+        setupLayout();
+        loadProducts();
     }
-    
-    private void initializeUI() {
-        setTitle("Product Catalog");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(800, 600);
-        setLocationRelativeTo(null);
+
+    private void initializeComponents() {
+        productsPanel = new JPanel(new GridLayout(0, 3, 10, 10));
+        productsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
-        // Create main panel with BorderLayout
-        JPanel mainPanel = new JPanel(new BorderLayout());
+        viewCartButton = new JButton("View Cart");
+        viewCartButton.addActionListener(e -> notifyViewCart());
+
+        // Initialize category filter
+        String[] categories = productService.getAllCategories().stream()
+            .map(c -> c.getName())
+            .toArray(String[]::new);
+        categoryFilter = new JComboBox<>(categories);
+        categoryFilter.insertItemAt("All Categories", 0);
+        categoryFilter.setSelectedIndex(0);
+        categoryFilter.addActionListener(e -> loadProducts());
+    }
+
+    private void setupLayout() {
+        // Add scroll pane for products
+        JScrollPane scrollPane = new JScrollPane(productsPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        // Top panel with title and filter
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(new JLabel("Product Catalog", SwingConstants.CENTER), BorderLayout.NORTH);
+        topPanel.add(categoryFilter, BorderLayout.SOUTH);
+
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(viewCartButton);
+
+        // Add components to main panel
+        add(topPanel, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private void loadProducts() {
+        productsPanel.removeAll();
         
-        // Create header panel
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        headerPanel.add(new JLabel("Product Catalog", new ImageIcon(), SwingConstants.LEFT));
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        
-        // Create product panel with GridLayout
-        productPanel = new JPanel(new GridLayout(0, 3, 10, 10));
-        productPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        
-        // Add products to the panel
-        for (Product product : products) {
-            JPanel productCard = createProductCard(product);
-            productPanel.add(productCard);
+        List<Product> products;
+        if (categoryFilter.getSelectedIndex() == 0) {
+            products = productService.getAllProducts();
+        } else {
+            String selectedCategory = (String) categoryFilter.getSelectedItem();
+            products = productService.getProductsByCategory(
+                productService.getAllCategories().stream()
+                    .filter(c -> c.getName().equals(selectedCategory))
+                    .findFirst()
+                    .get()
+                    .getId()
+            );
         }
-        
-        // Add scroll pane
-        JScrollPane scrollPane = new JScrollPane(productPanel);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-        
-        add(mainPanel);
+
+        for (Product product : products) {
+            addProductCard(product);
+        }
+
+        productsPanel.revalidate();
+        productsPanel.repaint();
     }
-    
-    private JPanel createProductCard(Product product) {
+
+    private void addProductCard(Product product) {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        card.setBorder(BorderFactory.createLineBorder(Color.GRAY));
-        
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(Color.GRAY),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        // Product image
+        JLabel imageLabel = new JLabel("Loading...", SwingConstants.CENTER);
+        imageLabel.setPreferredSize(new Dimension(200, 200));
+        card.add(imageLabel);
+
         // Product name
         JLabel nameLabel = new JLabel(product.getName());
         nameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         card.add(nameLabel);
-        
+
         // Product price
         JLabel priceLabel = new JLabel(String.format("$%.2f", product.getPrice()));
         priceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         card.add(priceLabel);
-        
-        // Add to cart button
-        JButton addToCartButton = new JButton("Add to Cart");
-        addToCartButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        addToCartButton.addActionListener(e -> handleAddToCart(product));
-        card.add(addToCartButton);
-        
-        return card;
+
+        // View details button
+        JButton viewButton = new JButton("View Details");
+        viewButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        viewButton.addActionListener(e -> notifyProductClick(product));
+        card.add(Box.createVerticalStrut(10));
+        card.add(viewButton);
+
+        productsPanel.add(card);
     }
-    
-    private void handleAddToCart(Product product) {
-        // TODO: Implement add to cart functionality
-        JOptionPane.showMessageDialog(this, 
-            "Added " + product.getName() + " to cart!", 
-            "Success", 
-            JOptionPane.INFORMATION_MESSAGE);
+
+    public void addProductClickListener(Consumer<Product> listener) {
+        productClickListeners.add(listener);
+    }
+
+    private void notifyProductClick(Product product) {
+        for (Consumer<Product> listener : productClickListeners) {
+            listener.accept(product);
+        }
+    }
+
+    public void addViewCartListener(Runnable listener) {
+        viewCartListeners.add(listener);
+    }
+
+    private void notifyViewCart() {
+        for (Runnable listener : viewCartListeners) {
+            listener.run();
+        }
     }
 } 

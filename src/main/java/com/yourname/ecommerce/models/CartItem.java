@@ -4,15 +4,30 @@ public class CartItem {
     private int id;
     private Product product;
     private int quantity;
-    private double price;
-    private double tax;
+    private double subtotal;
+    private double taxAmount;
+    private static final double TAX_RATE = 0.20; // 20% tax rate
+
+    public CartItem() {
+        this.quantity = 1;
+    }
 
     public CartItem(int id, Product product, int quantity) {
         this.id = id;
         this.product = product;
         this.quantity = quantity;
-        this.price = product.getPrice();
-        this.tax = product.getPrice() * product.getTaxRate();
+        calculateTotals();
+    }
+
+    public CartItem(Product product, int quantity) {
+        this.product = product;
+        this.quantity = quantity;
+        calculateTotals();
+    }
+
+    private void calculateTotals() {
+        this.subtotal = product.getPrice() * quantity;
+        this.taxAmount = subtotal * TAX_RATE;
     }
 
     // Getters and Setters
@@ -20,51 +35,22 @@ public class CartItem {
     public void setId(int id) { this.id = id; }
 
     public Product getProduct() { return product; }
-    public void setProduct(Product product) { this.product = product; }
+    public void setProduct(Product product) { 
+        this.product = product;
+        calculateTotals();
+    }
 
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) { 
-        if (quantity > 0 && quantity <= product.getStockQuantity()) {
-            this.quantity = quantity;
-        } else {
-            throw new IllegalArgumentException("Invalid quantity");
-        }
+        this.quantity = quantity;
+        calculateTotals();
     }
 
-    public double getPrice() { return price; }
-    public void setPrice(double price) { this.price = price; }
-
-    public double getTax() { return tax; }
-    public void setTax(double tax) { this.tax = tax; }
-
-    public double getSubtotal() {
-        return price * quantity;
-    }
-
-    public double getTaxAmount() {
-        return tax * quantity;
-    }
-
-    public double getTotal() {
-        return getSubtotal() + getTaxAmount();
-    }
-
-    public void incrementQuantity() {
-        setQuantity(quantity + 1);
-    }
-
-    public void decrementQuantity() {
-        if (quantity > 1) {
-            setQuantity(quantity - 1);
-        }
-    }
-
-    public void incrementQuantity(int amount) {
-        setQuantity(this.quantity + amount);
-    }
+    public double getSubtotal() { return subtotal; }
+    public double getTaxAmount() { return taxAmount; }
 
     @Override
     public String toString() {
-        return String.format("%s x%d - $%.2f", product.getName(), quantity, getTotal());
+        return String.format("%s x %d = $%.2f", product.getName(), quantity, subtotal);
     }
 } 
