@@ -2,6 +2,7 @@ package com.yourname.ecommerce.gui;
 
 import com.yourname.ecommerce.models.Order;
 import com.yourname.ecommerce.services.PaymentService;
+import com.yourname.ecommerce.services.OrderService;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -16,12 +17,14 @@ public class CheckoutForm extends JPanel {
     private JButton backToCartButton;
     private List<Runnable> backToCartListeners;
     private PaymentService paymentService;
+    private OrderService orderService;
     private Order currentOrder;
 
     public CheckoutForm() {
         setLayout(new BorderLayout());
         backToCartListeners = new ArrayList<>();
         paymentService = new PaymentService();
+        orderService = new OrderService();
         initializeComponents();
         setupLayout();
     }
@@ -106,11 +109,20 @@ public class CheckoutForm extends JPanel {
                 
                 if (success) {
                     String transactionId = paymentService.generateTransactionId();
-                    JOptionPane.showMessageDialog(this,
-                        "Payment successful!\nTransaction ID: " + transactionId,
-                        "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-                    notifyBackToCart();
+                    currentOrder.setTransactionId(transactionId);
+                    Order savedOrder = orderService.createOrder(currentOrder);
+                    if (savedOrder != null) {
+                        JOptionPane.showMessageDialog(this,
+                            "Payment successful!\nTransaction ID: " + transactionId,
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                        notifyBackToCart();
+                    } else {
+                        JOptionPane.showMessageDialog(this,
+                            "Payment successful, but order could not be saved. Please contact support.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
                     JOptionPane.showMessageDialog(this,
                         "Payment failed. Please check your card details and try again.",

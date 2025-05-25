@@ -1,6 +1,7 @@
 package com.yourname.ecommerce.gui;
 
 import com.yourname.ecommerce.models.Product;
+import com.yourname.ecommerce.models.Category;
 import com.yourname.ecommerce.services.ProductService;
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +16,7 @@ public class ProductCatalog extends JPanel {
     private List<Runnable> viewCartListeners;
     private List<Consumer<Product>> productClickListeners;
     private ProductService productService;
-    private JComboBox<String> categoryFilter;
+    private JComboBox<Category> categoryFilter;
 
     public ProductCatalog() {
         setLayout(new BorderLayout());
@@ -35,12 +36,22 @@ public class ProductCatalog extends JPanel {
         viewCartButton.addActionListener(e -> notifyViewCart());
 
         // Initialize category filter
-        String[] categories = productService.getAllCategories().stream()
-            .map(c -> c.getName())
-            .toArray(String[]::new);
-        categoryFilter = new JComboBox<>(categories);
-        categoryFilter.insertItemAt("All Categories", 0);
+        List<Category> categories = productService.getAllCategories();
+        categoryFilter = new JComboBox<>(categories.toArray(new Category[0]));
+        categoryFilter.insertItemAt(null, 0);
         categoryFilter.setSelectedIndex(0);
+        categoryFilter.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value == null) {
+                    setText("All Categories");
+                } else {
+                    setText(((Category) value).getName());
+                }
+                return this;
+            }
+        });
         categoryFilter.addActionListener(e -> loadProducts());
     }
 
@@ -69,17 +80,11 @@ public class ProductCatalog extends JPanel {
         productsPanel.removeAll();
         
         List<Product> products;
-        if (categoryFilter.getSelectedIndex() == 0) {
+        Category selectedCategory = (Category) categoryFilter.getSelectedItem();
+        if (selectedCategory == null) {
             products = productService.getAllProducts();
         } else {
-            String selectedCategory = (String) categoryFilter.getSelectedItem();
-            products = productService.getProductsByCategory(
-                productService.getAllCategories().stream()
-                    .filter(c -> c.getName().equals(selectedCategory))
-                    .findFirst()
-                    .get()
-                    .getId()
-            );
+            products = productService.getProductsByCategory(selectedCategory);
         }
 
         for (Product product : products) {

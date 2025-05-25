@@ -26,6 +26,9 @@ public class Product {
         DISCONTINUED
     }
 
+    public Product() {
+    }
+
     public Product(int id, String name, String description, double price, int stockQuantity, 
                   String imageUrl, Category category) {
         this.id = id;

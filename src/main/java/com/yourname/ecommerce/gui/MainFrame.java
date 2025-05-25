@@ -19,6 +19,7 @@ public class MainFrame extends JFrame {
     private OrderHistory orderHistory;
     private ProductDetail productDetail;
     private CheckoutForm checkoutForm;
+    private AdminDashboard adminDashboard;
     
     private ProductService productService;
     private PaymentService paymentService;
@@ -51,6 +52,7 @@ public class MainFrame extends JFrame {
         orderHistory = new OrderHistory();
         productDetail = new ProductDetail();
         checkoutForm = new CheckoutForm();
+        adminDashboard = new AdminDashboard();
 
         menuBar = new JMenuBar();
         menuBar.setVisible(false);
@@ -66,6 +68,7 @@ public class MainFrame extends JFrame {
         mainPanel.add(orderHistory, "ORDERS");
         mainPanel.add(productDetail, "PRODUCT_DETAIL");
         mainPanel.add(checkoutForm, "CHECKOUT");
+        mainPanel.add(adminDashboard, "ADMIN_DASHBOARD");
 
         add(mainPanel);
         cardLayout.show(mainPanel, "LOGIN");
@@ -73,12 +76,16 @@ public class MainFrame extends JFrame {
 
     private void setupNavigation() {
         // Login form navigation
-        loginForm.addLoginSuccessListener(() -> {
-            currentUser = new User();
-            currentUser.setUsername("guest");
-            currentUser.setRole(User.UserRole.CUSTOMER);
+        loginForm.addLoginSuccessListener(user -> {
+            currentUser = user;
             menuBar.setVisible(true);
-            cardLayout.show(mainPanel, "CATALOG");
+            setupMenuBar();
+            if (user.isAdmin()) {
+                cardLayout.show(mainPanel, "ADMIN_DASHBOARD");
+                adminDashboard.refreshData();
+            } else {
+                cardLayout.show(mainPanel, "CATALOG");
+            }
         });
         
         loginForm.addRegisterClickListener(() -> {
@@ -92,13 +99,15 @@ public class MainFrame extends JFrame {
 
         // Product catalog navigation
         productCatalog.addProductClickListener(product -> {
-            productDetail.setProductDetails(product);
-            productDetail.addBackListener(() -> cardLayout.show(mainPanel, "CATALOG"));
-            productDetail.addAddToCartListener((p, qty) -> {
-                shoppingCart.addItem(p, qty);
-                cardLayout.show(mainPanel, "CART");
-            });
-            cardLayout.show(mainPanel, "PRODUCT_DETAIL");
+            if (!currentUser.isAdmin()) {
+                productDetail.setProductDetails(product);
+                productDetail.addBackListener(() -> cardLayout.show(mainPanel, "CATALOG"));
+                productDetail.addAddToCartListener((p, qty) -> {
+                    shoppingCart.addItem(p, qty);
+                    cardLayout.show(mainPanel, "CART");
+                });
+                cardLayout.show(mainPanel, "PRODUCT_DETAIL");
+            }
         });
 
         // Shopping cart navigation
@@ -132,34 +141,73 @@ public class MainFrame extends JFrame {
         checkoutForm.addBackToCartListener(() -> {
             cardLayout.show(mainPanel, "CART");
         });
-
-        // Setup menu bar
-        JMenu navigationMenu = new JMenu("Navigation");
-        JMenuItem catalogItem = new JMenuItem("Product Catalog");
-        JMenuItem cartItem = new JMenuItem("Shopping Cart");
-        JMenuItem profileItem = new JMenuItem("User Profile");
-        JMenuItem ordersItem = new JMenuItem("Order History");
-        JMenuItem logoutItem = new JMenuItem("Logout");
-
-        navigationMenu.add(catalogItem);
-        navigationMenu.add(cartItem);
-        navigationMenu.add(profileItem);
-        navigationMenu.add(ordersItem);
-        navigationMenu.addSeparator();
-        navigationMenu.add(logoutItem);
-
-        menuBar.add(navigationMenu);
-
-        // Menu item actions
+    }
+    
+    private void setupMenuBar() {
+        menuBar.removeAll();
+        
+        // Create menus
+        JMenu fileMenu = new JMenu("File");
+        JMenu catalogMenu = new JMenu("Catalog");
+        JMenu accountMenu = new JMenu("Account");
+        
+        // Add menu items
+        JMenuItem exitItem = new JMenuItem("Exit");
+        exitItem.addActionListener(e -> System.exit(0));
+        fileMenu.add(exitItem);
+        
+        JMenuItem catalogItem = new JMenuItem("Browse Products");
         catalogItem.addActionListener(e -> cardLayout.show(mainPanel, "CATALOG"));
-        cartItem.addActionListener(e -> cardLayout.show(mainPanel, "CART"));
-        profileItem.addActionListener(e -> cardLayout.show(mainPanel, "PROFILE"));
-        ordersItem.addActionListener(e -> cardLayout.show(mainPanel, "ORDERS"));
+        catalogMenu.add(catalogItem);
+        
+        // Only add shopping cart menu item for non-admin users
+        if (!currentUser.isAdmin()) {
+            JMenuItem cartItem = new JMenuItem("Shopping Cart");
+            cartItem.addActionListener(e -> cardLayout.show(mainPanel, "CART"));
+            catalogMenu.add(cartItem);
+        }
+        
+        JMenuItem profileItem = new JMenuItem("My Profile");
+        profileItem.addActionListener(e -> {
+            userProfile.setUser(currentUser);
+            cardLayout.show(mainPanel, "PROFILE");
+        });
+        accountMenu.add(profileItem);
+        
+        // Only add order history menu item for non-admin users
+        if (!currentUser.isAdmin()) {
+            JMenuItem ordersItem = new JMenuItem("Order History");
+            ordersItem.addActionListener(e -> {
+                orderHistory.setUser(currentUser);
+                cardLayout.show(mainPanel, "ORDERS");
+            });
+            accountMenu.add(ordersItem);
+        }
+        
+        JMenuItem logoutItem = new JMenuItem("Logout");
         logoutItem.addActionListener(e -> {
             currentUser = null;
             menuBar.setVisible(false);
             cardLayout.show(mainPanel, "LOGIN");
         });
+        accountMenu.add(logoutItem);
+        
+        // Add admin menu if user is admin
+        if (currentUser.isAdmin()) {
+            JMenu adminMenu = new JMenu("Admin");
+            JMenuItem dashboardItem = new JMenuItem("Dashboard");
+            dashboardItem.addActionListener(e -> {
+                adminDashboard.refreshData();
+                cardLayout.show(mainPanel, "ADMIN_DASHBOARD");
+            });
+            adminMenu.add(dashboardItem);
+            menuBar.add(adminMenu);
+        }
+        
+        // Add all menus to menu bar
+        menuBar.add(fileMenu);
+        menuBar.add(catalogMenu);
+        menuBar.add(accountMenu);
     }
 
     public static void main(String[] args) {

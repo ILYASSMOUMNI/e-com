@@ -1,20 +1,31 @@
 package com.yourname.ecommerce.gui;
 
+import com.yourname.ecommerce.models.User;
+import com.yourname.ecommerce.models.Order;
+import com.yourname.ecommerce.services.OrderService;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.List;
 
 public class OrderHistory extends JPanel {
     private JTable orderTable;
     private DefaultTableModel tableModel;
     private JButton viewDetailsButton;
     private JButton backButton;
+    private User currentUser;
+    private OrderService orderService;
 
     public OrderHistory() {
         setLayout(new BorderLayout());
+        orderService = new OrderService();
         initializeComponents();
         setupLayout();
+    }
+
+    public void setUser(User user) {
+        this.currentUser = user;
         loadOrderHistory();
     }
 
@@ -53,11 +64,19 @@ public class OrderHistory extends JPanel {
     }
 
     private void loadOrderHistory() {
-        // TODO: Load order history from service
-        // This is sample data for demonstration
-        tableModel.addRow(new Object[]{"ORD001", "2024-03-15", "$150.00", "Delivered"});
-        tableModel.addRow(new Object[]{"ORD002", "2024-03-10", "$75.50", "Processing"});
-        tableModel.addRow(new Object[]{"ORD003", "2024-03-05", "$200.00", "Shipped"});
+        tableModel.setRowCount(0); // Clear existing rows
+        
+        if (currentUser != null) {
+            List<Order> orders = orderService.getOrdersByUser(currentUser);
+            for (Order order : orders) {
+                tableModel.addRow(new Object[]{
+                    order.getId(),
+                    order.getOrderDate(),
+                    String.format("$%.2f", order.getTotalAmount()),
+                    order.getStatus()
+                });
+            }
+        }
     }
 
     private void viewOrderDetails() {

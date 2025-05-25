@@ -1,5 +1,6 @@
 package com.yourname.ecommerce.gui;
 
+import com.yourname.ecommerce.models.User;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -13,11 +14,16 @@ public class UserProfile extends JPanel {
     private JPasswordField confirmPasswordField;
     private JButton saveButton;
     private JButton cancelButton;
+    private User currentUser;
 
     public UserProfile() {
         setLayout(new BorderLayout());
         initializeComponents();
         setupLayout();
+    }
+
+    public void setUser(User user) {
+        this.currentUser = user;
         loadUserData();
     }
 
@@ -94,11 +100,11 @@ public class UserProfile extends JPanel {
     }
 
     private void loadUserData() {
-        // TODO: Load user data from service
-        // This is a placeholder for demonstration
-        usernameField.setText("currentUser");
-        fullNameField.setText("John Doe");
-        emailField.setText("john.doe@example.com");
+        if (currentUser != null) {
+            usernameField.setText(currentUser.getUsername());
+            fullNameField.setText(currentUser.getFullName());
+            emailField.setText(currentUser.getEmail());
+        }
     }
 
     private void saveChanges() {

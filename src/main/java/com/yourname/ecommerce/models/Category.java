@@ -7,9 +7,12 @@ public class Category {
     private int id;
     private String name;
     private String description;
-    private Category parentCategory;
+    private Category parent;
     private List<Category> subCategories;
     private List<Product> products;
+
+    public Category() {
+    }
 
     public Category(int id, String name, String description) {
         this.id = id;
@@ -19,11 +22,11 @@ public class Category {
         this.products = new ArrayList<>();
     }
 
-    public Category(int id, String name, String description, Category parentCategory) {
+    public Category(int id, String name, String description, Category parent) {
         this(id, name, description);
-        this.parentCategory = parentCategory;
-        if (parentCategory != null) {
-            parentCategory.addSubCategory(this);
+        this.parent = parent;
+        if (parent != null) {
+            parent.addSubCategory(this);
         }
     }
 
@@ -37,8 +40,8 @@ public class Category {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public Category getParentCategory() { return parentCategory; }
-    public void setParentCategory(Category parentCategory) { this.parentCategory = parentCategory; }
+    public Category getParent() { return parent; }
+    public void setParent(Category parent) { this.parent = parent; }
 
     public List<Category> getSubCategories() { return subCategories; }
     public void setSubCategories(List<Category> subCategories) { this.subCategories = subCategories; }
@@ -59,7 +62,7 @@ public class Category {
     }
 
     public boolean isRootCategory() {
-        return parentCategory == null;
+        return parent == null;
     }
 
     public boolean isLeafCategory() {
@@ -70,7 +73,7 @@ public class Category {
         if (isRootCategory()) {
             return name;
         }
-        return parentCategory.getFullPath() + " > " + name;
+        return parent.getFullPath() + " > " + name;
     }
 
     @Override
