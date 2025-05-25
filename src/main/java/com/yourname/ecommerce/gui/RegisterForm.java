@@ -30,6 +30,7 @@ public class RegisterForm extends JPanel {
         authService = new AuthService();
         initializeComponents();
         setupLayout();
+        applyTheme();
     }
 
     private void initializeComponents() {
@@ -46,59 +47,181 @@ public class RegisterForm extends JPanel {
         // Add action listeners
         registerButton.addActionListener(e -> handleRegistration());
         backToLoginButton.addActionListener(e -> notifyBackToLogin());
+        
+        // Add input validation listeners
+        addInputValidationListeners();
+    }
+
+    private void addInputValidationListeners() {
+        // Email validation
+        emailField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { validateEmail(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { validateEmail(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { validateEmail(); }
+        });
+
+        // Password validation
+        passwordField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { validatePassword(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { validatePassword(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { validatePassword(); }
+        });
+
+        // Phone validation
+        phoneField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { validatePhone(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { validatePhone(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { validatePhone(); }
+        });
+    }
+
+    private void validateEmail() {
+        String email = emailField.getText().trim();
+        if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            emailField.setBorder(BorderFactory.createLineBorder(AppTheme.ACCENT_COLOR));
+        } else {
+            emailField.setBorder(BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR));
+        }
+    }
+
+    private void validatePassword() {
+        String password = new String(passwordField.getPassword());
+        if (!password.isEmpty() && password.length() < 8) {
+            passwordField.setBorder(BorderFactory.createLineBorder(AppTheme.ACCENT_COLOR));
+        } else {
+            passwordField.setBorder(BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR));
+        }
+    }
+
+    private void validatePhone() {
+        String phone = phoneField.getText().trim();
+        if (!phone.isEmpty() && !phone.matches("^\\+?[0-9]{10,15}$")) {
+            phoneField.setBorder(BorderFactory.createLineBorder(AppTheme.ACCENT_COLOR));
+        } else {
+            phoneField.setBorder(BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR));
+        }
     }
 
     private void setupLayout() {
-        JPanel formPanel = new JPanel(new GridBagLayout());
+        // Create main panel with padding
+        JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.setBorder(AppTheme.PANEL_BORDER);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Add title
+        JLabel titleLabel = new JLabel("Create New Account", SwingConstants.CENTER);
+        titleLabel.setFont(AppTheme.TITLE_FONT);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 0, 20, 0);
+        mainPanel.add(titleLabel, gbc);
+
+        // Create form panel
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        formPanel.setOpaque(false);
+
         // Add components to form panel
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        
+        // First Name
         gbc.gridx = 0; gbc.gridy = 0;
-        formPanel.add(new JLabel("First Name:"), gbc);
+        JLabel firstNameLabel = new JLabel("First Name:");
+        formPanel.add(firstNameLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(firstNameField, gbc);
 
+        // Last Name
         gbc.gridx = 0; gbc.gridy = 1;
-        formPanel.add(new JLabel("Last Name:"), gbc);
+        JLabel lastNameLabel = new JLabel("Last Name:");
+        formPanel.add(lastNameLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(lastNameField, gbc);
 
+        // Username
         gbc.gridx = 0; gbc.gridy = 2;
-        formPanel.add(new JLabel("Username:"), gbc);
+        JLabel usernameLabel = new JLabel("Username:");
+        formPanel.add(usernameLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(usernameField, gbc);
 
+        // Email
         gbc.gridx = 0; gbc.gridy = 3;
-        formPanel.add(new JLabel("Email:"), gbc);
+        JLabel emailLabel = new JLabel("Email:");
+        formPanel.add(emailLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(emailField, gbc);
 
+        // Phone
         gbc.gridx = 0; gbc.gridy = 4;
-        formPanel.add(new JLabel("Phone:"), gbc);
+        JLabel phoneLabel = new JLabel("Phone:");
+        formPanel.add(phoneLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(phoneField, gbc);
 
+        // Password
         gbc.gridx = 0; gbc.gridy = 5;
-        formPanel.add(new JLabel("Password:"), gbc);
+        JLabel passwordLabel = new JLabel("Password:");
+        formPanel.add(passwordLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(passwordField, gbc);
 
+        // Confirm Password
         gbc.gridx = 0; gbc.gridy = 6;
-        formPanel.add(new JLabel("Confirm Password:"), gbc);
+        JLabel confirmPasswordLabel = new JLabel("Confirm Password:");
+        formPanel.add(confirmPasswordLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(confirmPasswordField, gbc);
 
+        // Add form panel to main panel
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        mainPanel.add(formPanel, gbc);
+
         // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(registerButton);
         buttonPanel.add(backToLoginButton);
 
-        // Add panels to main panel
-        add(new JLabel("Register New Account", SwingConstants.CENTER), BorderLayout.NORTH);
-        add(formPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 0, 0, 0);
+        mainPanel.add(buttonPanel, gbc);
+
+        // Add main panel to this panel
+        add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private void applyTheme() {
+        // Apply theme to all components
+        AppTheme.applyTheme(this);
+        AppTheme.applyTheme(usernameField);
+        AppTheme.applyTheme(passwordField);
+        AppTheme.applyTheme(confirmPasswordField);
+        AppTheme.applyTheme(emailField);
+        AppTheme.applyTheme(firstNameField);
+        AppTheme.applyTheme(lastNameField);
+        AppTheme.applyTheme(phoneField);
+        AppTheme.applyTheme(registerButton);
+        AppTheme.applyTheme(backToLoginButton);
+        
+        // Custom styling for register button
+        registerButton.setBackground(AppTheme.SUCCESS_COLOR);
+        registerButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                registerButton.setBackground(AppTheme.SUCCESS_COLOR.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                registerButton.setBackground(AppTheme.SUCCESS_COLOR);
+            }
+        });
     }
 
     private void handleRegistration() {
@@ -144,12 +267,20 @@ public class RegisterForm extends JPanel {
             return;
         }
 
+        if (!phone.matches("^\\+?[0-9]{10,15}$")) {
+            JOptionPane.showMessageDialog(this, 
+                "Invalid phone number format", 
+                "Error", 
+                JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         // Attempt to register the user
         User newUser = authService.register(username, password, email, firstName, lastName, phone);
         
         if (newUser != null) {
             JOptionPane.showMessageDialog(this, 
-                "Registration successful!", 
+                "Registration successful! Please login with your new account.", 
                 "Success", 
                 JOptionPane.INFORMATION_MESSAGE);
             

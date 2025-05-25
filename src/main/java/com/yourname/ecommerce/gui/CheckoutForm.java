@@ -3,6 +3,7 @@ package com.yourname.ecommerce.gui;
 import com.yourname.ecommerce.models.Order;
 import com.yourname.ecommerce.services.PaymentService;
 import com.yourname.ecommerce.services.OrderService;
+import com.yourname.ecommerce.utils.DBConnection;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -23,7 +24,7 @@ public class CheckoutForm extends JPanel {
     public CheckoutForm() {
         setLayout(new BorderLayout());
         backToCartListeners = new ArrayList<>();
-        paymentService = new PaymentService();
+        paymentService = new PaymentService(DBConnection.getConnection());
         orderService = new OrderService();
         initializeComponents();
         setupLayout();

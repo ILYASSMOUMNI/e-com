@@ -4,6 +4,7 @@ import com.yourname.ecommerce.models.CartItem;
 import com.yourname.ecommerce.models.Order;
 import com.yourname.ecommerce.models.Product;
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -24,14 +25,16 @@ public class ShoppingCart extends JPanel {
         continueShoppingListeners = new ArrayList<>();
         initializeComponents();
         setupLayout();
+        applyTheme();
     }
 
     private void initializeComponents() {
         cartItemsPanel = new JPanel();
         cartItemsPanel.setLayout(new BoxLayout(cartItemsPanel, BoxLayout.Y_AXIS));
+        cartItemsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         totalLabel = new JLabel("Total: $0.00");
-        totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        totalLabel.setFont(AppTheme.HEADER_FONT);
         
         checkoutButton = new JButton("Proceed to Checkout");
         continueShoppingButton = new JButton("Continue Shopping");
@@ -43,19 +46,65 @@ public class ShoppingCart extends JPanel {
     private void setupLayout() {
         setLayout(new BorderLayout());
         
+        // Title panel
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JLabel titleLabel = new JLabel("Shopping Cart", SwingConstants.CENTER);
+        titleLabel.setFont(AppTheme.TITLE_FONT);
+        titlePanel.add(titleLabel, BorderLayout.CENTER);
+        
+        // Cart items panel with scroll
+        cartItemsPanel.setPreferredSize(new Dimension(0, 400)); // Set fixed height
+        cartItemsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 400));
         JScrollPane scrollPane = new JScrollPane(cartItemsPanel);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(null);
         
+        // Bottom panel with total and buttons
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(totalLabel, BorderLayout.CENTER);
+        bottomPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, AppTheme.PRIMARY_COLOR),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
         
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        // Total panel
+        JPanel totalPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        totalPanel.setOpaque(false);
+        totalPanel.add(new JLabel("Total Amount:"));
+        totalPanel.add(totalLabel);
+        bottomPanel.add(totalPanel, BorderLayout.CENTER);
+        
+        // Button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(continueShoppingButton);
         buttonPanel.add(checkoutButton);
-        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+        bottomPanel.add(buttonPanel, BorderLayout.EAST);
         
+        add(titlePanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+    }
+
+    private void applyTheme() {
+        // Apply theme to all components
+        AppTheme.applyTheme(this);
+        AppTheme.applyTheme(cartItemsPanel);
+        AppTheme.applyTheme(totalLabel);
+        AppTheme.applyTheme(checkoutButton);
+        AppTheme.applyTheme(continueShoppingButton);
+        
+        // Custom styling for checkout button
+        checkoutButton.setBackground(AppTheme.SUCCESS_COLOR);
+        checkoutButton.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                checkoutButton.setBackground(AppTheme.SUCCESS_COLOR.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                checkoutButton.setBackground(AppTheme.SUCCESS_COLOR);
+            }
+        });
     }
 
     public void addItem(Product product, int quantity) {
@@ -89,36 +138,92 @@ public class ShoppingCart extends JPanel {
     private void updateCartDisplay() {
         cartItemsPanel.removeAll();
         
-        for (CartItem item : cartItems) {
-            JPanel itemPanel = createItemPanel(item);
-            cartItemsPanel.add(itemPanel);
-            cartItemsPanel.add(Box.createVerticalStrut(10));
+        if (cartItems.isEmpty()) {
+            JLabel emptyLabel = new JLabel("Your cart is empty", SwingConstants.CENTER);
+            emptyLabel.setFont(AppTheme.HEADER_FONT);
+            emptyLabel.setForeground(AppTheme.TEXT_COLOR);
+            cartItemsPanel.add(emptyLabel);
+        } else {
+            for (CartItem item : cartItems) {
+                JPanel itemPanel = createItemPanel(item);
+                cartItemsPanel.add(itemPanel);
+                cartItemsPanel.add(Box.createVerticalStrut(10));
+            }
         }
         
-        totalLabel.setText(String.format("Total: $%.2f", getTotalAmount()));
+        totalLabel.setText(String.format("$%.2f", getTotalAmount()));
         cartItemsPanel.revalidate();
         cartItemsPanel.repaint();
     }
 
     private JPanel createItemPanel(CartItem item) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        JPanel panel = new JPanel(new BorderLayout(10, 0));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+        panel.setBackground(Color.WHITE);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100)); // Set fixed height for each item
+
+        // Left panel with product info
+        JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 5));
+        infoPanel.setOpaque(false);
         
         JLabel nameLabel = new JLabel(item.getProduct().getName());
-        JLabel priceLabel = new JLabel(String.format("$%.2f x %d = $%.2f",
-                item.getProduct().getPrice(),
-                item.getQuantity(),
-                item.getProduct().getPrice() * item.getQuantity()));
+        nameLabel.setFont(AppTheme.HEADER_FONT);
+        
+        JLabel priceLabel = new JLabel(String.format("$%.2f each", item.getProduct().getPrice()));
+        priceLabel.setForeground(AppTheme.ACCENT_COLOR);
+        
+        infoPanel.add(nameLabel);
+        infoPanel.add(priceLabel);
+        
+        // Center panel with quantity controls
+        JPanel quantityPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+        quantityPanel.setOpaque(false);
+        
+        JButton decreaseButton = new JButton("-");
+        JLabel quantityLabel = new JLabel(String.valueOf(item.getQuantity()));
+        JButton increaseButton = new JButton("+");
+        
+        decreaseButton.addActionListener(e -> {
+            if (item.getQuantity() > 1) {
+                item.setQuantity(item.getQuantity() - 1);
+                updateCartDisplay();
+            }
+        });
+        
+        increaseButton.addActionListener(e -> {
+            item.setQuantity(item.getQuantity() + 1);
+            updateCartDisplay();
+        });
+        
+        quantityPanel.add(decreaseButton);
+        quantityPanel.add(quantityLabel);
+        quantityPanel.add(increaseButton);
+        
+        // Right panel with subtotal and remove button
+        JPanel rightPanel = new JPanel(new BorderLayout(10, 0));
+        rightPanel.setOpaque(false);
+        
+        JLabel subtotalLabel = new JLabel(String.format("$%.2f", 
+            item.getProduct().getPrice() * item.getQuantity()));
+        subtotalLabel.setFont(AppTheme.HEADER_FONT);
         
         JButton removeButton = new JButton("Remove");
+        removeButton.setBackground(AppTheme.ACCENT_COLOR);
         removeButton.addActionListener(e -> {
             cartItems.remove(item);
             updateCartDisplay();
         });
         
-        panel.add(nameLabel, BorderLayout.WEST);
-        panel.add(priceLabel, BorderLayout.CENTER);
-        panel.add(removeButton, BorderLayout.EAST);
+        rightPanel.add(subtotalLabel, BorderLayout.CENTER);
+        rightPanel.add(removeButton, BorderLayout.SOUTH);
+        
+        // Add all panels to main panel
+        panel.add(infoPanel, BorderLayout.WEST);
+        panel.add(quantityPanel, BorderLayout.CENTER);
+        panel.add(rightPanel, BorderLayout.EAST);
         
         return panel;
     }

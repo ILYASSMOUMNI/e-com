@@ -1,6 +1,7 @@
 package com.yourname.ecommerce.gui;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -16,13 +17,17 @@ public class ProductDetail extends JPanel {
     private JLabel nameLabel;
     private JLabel priceLabel;
     private JLabel descriptionLabel;
+    private JLabel stockLabel;
+    private JLabel categoryLabel;
     private JSpinner quantitySpinner;
     private JButton addToCartButton;
     private JButton backButton;
+    private JButton wishlistButton;
     private List<Runnable> backListeners;
     private List<BiConsumer<Product, Integer>> addToCartListeners;
     private String imageUrl;
     private Product currentProduct;
+    private boolean isInWishlist;
 
     public ProductDetail() {
         setLayout(new BorderLayout());
@@ -30,55 +35,146 @@ public class ProductDetail extends JPanel {
         addToCartListeners = new ArrayList<>();
         initializeComponents();
         setupLayout();
+        applyTheme();
     }
 
     private void initializeComponents() {
         imageLabel = new JLabel("Loading...", SwingConstants.CENTER);
         imageLabel.setPreferredSize(new Dimension(400, 400));
+        imageLabel.setBorder(BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR, 1));
         
         nameLabel = new JLabel();
+        nameLabel.setFont(AppTheme.TITLE_FONT);
+        
         priceLabel = new JLabel();
+        priceLabel.setFont(AppTheme.HEADER_FONT);
+        priceLabel.setForeground(AppTheme.ACCENT_COLOR);
+        
         descriptionLabel = new JLabel();
         descriptionLabel.setVerticalAlignment(SwingConstants.TOP);
+        descriptionLabel.setFont(AppTheme.NORMAL_FONT);
+        
+        stockLabel = new JLabel();
+        stockLabel.setFont(AppTheme.NORMAL_FONT);
+        
+        categoryLabel = new JLabel();
+        categoryLabel.setFont(AppTheme.NORMAL_FONT);
         
         SpinnerNumberModel spinnerModel = new SpinnerNumberModel(1, 1, 99, 1);
         quantitySpinner = new JSpinner(spinnerModel);
+        JComponent editor = quantitySpinner.getEditor();
+        JFormattedTextField textField = ((JSpinner.DefaultEditor) editor).getTextField();
+        textField.setColumns(3);
         
         addToCartButton = new JButton("Add to Cart");
         backButton = new JButton("Back to Catalog");
+        wishlistButton = new JButton("♡ Add to Wishlist");
+        isInWishlist = false;
 
         addToCartButton.addActionListener(e -> handleAddToCart());
         backButton.addActionListener(e -> notifyBack());
+        wishlistButton.addActionListener(e -> toggleWishlist());
     }
 
     private void setupLayout() {
-        // Image panel
+        // Main content panel with padding
+        JPanel mainPanel = new JPanel(new BorderLayout(20, 20));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        
+        // Image panel with border
         JPanel imagePanel = new JPanel(new BorderLayout());
         imagePanel.add(imageLabel, BorderLayout.CENTER);
-        imagePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        imagePanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
 
         // Details panel
-        JPanel detailsPanel = new JPanel(new BorderLayout());
+        JPanel detailsPanel = new JPanel(new BorderLayout(10, 10));
         detailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Product info
-        JPanel infoPanel = new JPanel(new GridLayout(3, 1, 5, 5));
-        infoPanel.add(nameLabel);
-        infoPanel.add(priceLabel);
-        infoPanel.add(descriptionLabel);
+        // Product info panel
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridwidth = GridBagConstraints.REMAINDER;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        infoPanel.add(nameLabel, gbc);
+        infoPanel.add(priceLabel, gbc);
+        infoPanel.add(categoryLabel, gbc);
+        infoPanel.add(stockLabel, gbc);
+        
+        // Description panel with scroll
+        JPanel descPanel = new JPanel(new BorderLayout());
+        descPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR),
+            "Description"
+        ));
+        descPanel.add(descriptionLabel, BorderLayout.CENTER);
+        JScrollPane descScroll = new JScrollPane(descPanel);
+        descScroll.setPreferredSize(new Dimension(400, 150));
+        infoPanel.add(descScroll, gbc);
+
         detailsPanel.add(infoPanel, BorderLayout.CENTER);
 
-        // Quantity and buttons panel
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        controlPanel.add(new JLabel("Quantity:"));
-        controlPanel.add(quantitySpinner);
+        // Control panel with quantity and buttons
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        controlPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        
+        JPanel quantityPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        quantityPanel.add(new JLabel("Quantity:"));
+        quantityPanel.add(quantitySpinner);
+        controlPanel.add(quantityPanel);
+        
         controlPanel.add(addToCartButton);
+        controlPanel.add(wishlistButton);
         controlPanel.add(backButton);
+        
         detailsPanel.add(controlPanel, BorderLayout.SOUTH);
 
         // Add panels to main panel
-        add(imagePanel, BorderLayout.CENTER);
-        add(detailsPanel, BorderLayout.SOUTH);
+        mainPanel.add(imagePanel, BorderLayout.CENTER);
+        mainPanel.add(detailsPanel, BorderLayout.EAST);
+        
+        add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private void applyTheme() {
+        // Apply theme to all components
+        AppTheme.applyTheme(this);
+        AppTheme.applyTheme(imageLabel);
+        AppTheme.applyTheme(nameLabel);
+        AppTheme.applyTheme(priceLabel);
+        AppTheme.applyTheme(descriptionLabel);
+        AppTheme.applyTheme(stockLabel);
+        AppTheme.applyTheme(categoryLabel);
+        AppTheme.applyTheme(quantitySpinner);
+        AppTheme.applyTheme(addToCartButton);
+        AppTheme.applyTheme(backButton);
+        AppTheme.applyTheme(wishlistButton);
+        
+        // Custom styling for buttons
+        addToCartButton.setBackground(AppTheme.SUCCESS_COLOR);
+        addToCartButton.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                addToCartButton.setBackground(AppTheme.SUCCESS_COLOR.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                addToCartButton.setBackground(AppTheme.SUCCESS_COLOR);
+            }
+        });
+        
+        wishlistButton.setBackground(AppTheme.ACCENT_COLOR);
+        wishlistButton.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                wishlistButton.setBackground(AppTheme.ACCENT_COLOR.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                wishlistButton.setBackground(AppTheme.ACCENT_COLOR);
+            }
+        });
     }
 
     public void setProductDetails(Product product) {
@@ -87,6 +183,9 @@ public class ProductDetail extends JPanel {
         nameLabel.setText(product.getName());
         priceLabel.setText(String.format("$%.2f", product.getPrice()));
         descriptionLabel.setText("<html><body style='width: 300px'>" + product.getDescription() + "</body></html>");
+        categoryLabel.setText("Category: " + product.getCategory().getName());
+        stockLabel.setText("In Stock: " + product.getStockQuantity());
+        stockLabel.setForeground(product.getStockQuantity() > 0 ? AppTheme.SUCCESS_COLOR : AppTheme.ERROR_COLOR);
         loadImage();
     }
 
@@ -105,12 +204,14 @@ public class ProductDetail extends JPanel {
                     SwingUtilities.invokeLater(() -> {
                         imageLabel.setIcon(null);
                         imageLabel.setText("Image not available");
+                        imageLabel.setFont(AppTheme.HEADER_FONT);
                     });
                 }
             } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
                     imageLabel.setIcon(null);
                     imageLabel.setText("Error loading image");
+                    imageLabel.setFont(AppTheme.HEADER_FONT);
                 });
             }
         }).start();
@@ -119,10 +220,27 @@ public class ProductDetail extends JPanel {
     private void handleAddToCart() {
         if (currentProduct != null) {
             int quantity = (Integer) quantitySpinner.getValue();
+            if (quantity > currentProduct.getStockQuantity()) {
+                JOptionPane.showMessageDialog(this,
+                    "Sorry, only " + currentProduct.getStockQuantity() + " items available in stock.",
+                    "Insufficient Stock",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
             for (BiConsumer<Product, Integer> listener : addToCartListeners) {
                 listener.accept(currentProduct, quantity);
             }
+            JOptionPane.showMessageDialog(this,
+                quantity + " " + currentProduct.getName() + "(s) added to cart!",
+                "Added to Cart",
+                JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+    private void toggleWishlist() {
+        isInWishlist = !isInWishlist;
+        wishlistButton.setText(isInWishlist ? "♥ Remove from Wishlist" : "♡ Add to Wishlist");
+        // TODO: Implement wishlist functionality
     }
 
     public void addBackListener(Runnable listener) {

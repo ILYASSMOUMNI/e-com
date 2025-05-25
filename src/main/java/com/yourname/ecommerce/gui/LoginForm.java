@@ -25,6 +25,7 @@ public class LoginForm extends JPanel {
         authService = new AuthService();
         initializeComponents();
         setupLayout();
+        applyTheme();
     }
 
     private void initializeComponents() {
@@ -41,18 +42,32 @@ public class LoginForm extends JPanel {
     private void setupLayout() {
         // Create main panel with padding
         JPanel mainPanel = new JPanel(new GridBagLayout());
+        mainPanel.setBorder(AppTheme.PANEL_BORDER);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Add title
+        JLabel titleLabel = new JLabel("Welcome Back!", SwingConstants.CENTER);
+        titleLabel.setFont(AppTheme.TITLE_FONT);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 0, 20, 0);
+        mainPanel.add(titleLabel, gbc);
 
         // Create form panel
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        formPanel.setOpaque(false);
 
         // Add components to form panel
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 5, 5, 5);
+        
         gbc.gridx = 0;
         gbc.gridy = 0;
-        formPanel.add(new JLabel("Username:"), gbc);
+        JLabel usernameLabel = new JLabel("Username:");
+        formPanel.add(usernameLabel, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 0;
@@ -60,27 +75,54 @@ public class LoginForm extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        formPanel.add(new JLabel("Password:"), gbc);
+        JLabel passwordLabel = new JLabel("Password:");
+        formPanel.add(passwordLabel, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 1;
         formPanel.add(passwordField, gbc);
 
         // Create button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setOpaque(false);
         buttonPanel.add(loginButton);
         buttonPanel.add(registerButton);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 0, 0, 0);
         formPanel.add(buttonPanel, gbc);
 
         // Add form panel to main panel
-        mainPanel.add(formPanel);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(0, 0, 0, 0);
+        mainPanel.add(formPanel, gbc);
 
         // Add main panel to this panel
         add(mainPanel, BorderLayout.CENTER);
+    }
+
+    private void applyTheme() {
+        // Apply theme to all components
+        AppTheme.applyTheme(this);
+        AppTheme.applyTheme(usernameField);
+        AppTheme.applyTheme(passwordField);
+        AppTheme.applyTheme(loginButton);
+        AppTheme.applyTheme(registerButton);
+        
+        // Custom styling for register button
+        registerButton.setBackground(AppTheme.ACCENT_COLOR);
+        registerButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                registerButton.setBackground(AppTheme.ACCENT_COLOR.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                registerButton.setBackground(AppTheme.ACCENT_COLOR);
+            }
+        });
     }
 
     private void handleLogin() {
