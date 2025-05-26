@@ -35,7 +35,7 @@ public class MainFrame extends JFrame {
         setMinimumSize(new Dimension(800, 600));
 
         productService = new ProductService();
-        paymentService = new PaymentService(DBConnection.getConnection());
+        paymentService = new PaymentService();
         
         initializeComponents();
         setupLayout();

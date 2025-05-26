@@ -21,6 +21,8 @@ public class PaymentForm extends JPanel {
     private JLabel orderIdLabel;
     private Order currentOrder;
     private PaymentService paymentService;
+    private Runnable onPaymentSuccess;
+    private Runnable onPaymentCancel;
 
     public PaymentForm(Order order, PaymentService paymentService) {
         this.currentOrder = order;
@@ -29,6 +31,14 @@ public class PaymentForm extends JPanel {
         setBackground(AppTheme.BACKGROUND_COLOR);
         initializeComponents();
         setupLayout();
+    }
+    
+    public void setOnPaymentSuccess(Runnable onPaymentSuccess) {
+        this.onPaymentSuccess = onPaymentSuccess;
+    }
+
+    public void setOnPaymentCancel(Runnable onPaymentCancel) {
+        this.onPaymentCancel = onPaymentCancel;
     }
 
     private void initializeComponents() {
@@ -218,6 +228,7 @@ public class PaymentForm extends JPanel {
             return;
         }
 
+        // Create payment object
         Payment payment = new Payment(
             currentOrder.getId(),
             cardNumberField.getText(),
@@ -229,18 +240,71 @@ public class PaymentForm extends JPanel {
             (String) paymentMethodCombo.getSelectedItem()
         );
 
-        if (paymentService.createPayment(payment)) {
-            JOptionPane.showMessageDialog(this,
-                "Payment processed successfully!",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
-            // TODO: Navigate to order confirmation page
-        } else {
-            JOptionPane.showMessageDialog(this,
-                "Failed to process payment. Please try again.",
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
+        // Show processing dialog
+        JDialog processingDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Processing Payment", true);
+        JLabel processingLabel = new JLabel("Processing your payment...", SwingConstants.CENTER);
+        processingLabel.setFont(AppTheme.NORMAL_FONT);
+        processingDialog.add(processingLabel);
+        processingDialog.setSize(300, 100);
+        processingDialog.setLocationRelativeTo(this);
+
+        // Process payment in background
+        new Thread(() -> {
+            try {
+                // First save payment to database
+                boolean saved = paymentService.createPayment(payment);
+                if (!saved) {
+                    SwingUtilities.invokeLater(() -> {
+                        processingDialog.dispose();
+                        JOptionPane.showMessageDialog(this,
+                            "Failed to save payment information. Please try again.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    });
+                    return;
+                }
+
+                // Then process the payment
+                boolean processed = paymentService.processPayment(
+                    currentOrder,
+                    payment.getCardNumber(),
+                    payment.getExpiryDate(),
+                    payment.getCvv()
+                );
+
+                SwingUtilities.invokeLater(() -> {
+                    processingDialog.dispose();
+                    if (processed) {
+                        // Update payment status to SUCCESS
+                        paymentService.updatePaymentStatus(payment.getId(), "SUCCESS");
+                        JOptionPane.showMessageDialog(this,
+                            "Payment processed successfully!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                        if (onPaymentSuccess != null) {
+                            onPaymentSuccess.run();
+                        }
+                    } else {
+                        // Update payment status to FAILED
+                        paymentService.updatePaymentStatus(payment.getId(), "FAILED");
+                        JOptionPane.showMessageDialog(this,
+                            "Payment processing failed. Please try again.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    }
+                });
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    processingDialog.dispose();
+                    JOptionPane.showMessageDialog(this,
+                        "An error occurred while processing payment: " + e.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }).start();
+
+        processingDialog.setVisible(true);
     }
 
     private boolean validateFields() {
@@ -284,14 +348,8 @@ public class PaymentForm extends JPanel {
     }
 
     private void cancelPayment() {
-        // TODO: Implement navigation back to previous screen
-        Container parent = getParent();
-        if (parent instanceof JFrame) {
-            JFrame frame = (JFrame) parent;
-            frame.getContentPane().removeAll();
-            frame.getContentPane().add(new MainFrame());
-            frame.revalidate();
-            frame.repaint();
+         if (onPaymentCancel != null) {
+            onPaymentCancel.run();
         }
     }
 } 

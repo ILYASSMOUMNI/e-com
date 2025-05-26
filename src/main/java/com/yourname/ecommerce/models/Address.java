@@ -2,6 +2,7 @@ package com.yourname.ecommerce.models;
 
 public class Address {
     private int id;
+    private int userId;
     private String street;
     private String city;
     private String state;
@@ -13,8 +14,9 @@ public class Address {
         // Default constructor
     }
 
-    public Address(int id, String street, String city, String state, String zipCode, String country) {
+    public Address(int id, int userId, String street, String city, String state, String zipCode, String country) {
         this.id = id;
+        this.userId = userId;
         this.street = street;
         this.city = city;
         this.state = state;
@@ -26,6 +28,9 @@ public class Address {
     // Getters and Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
+
+    public int getUserId() { return userId; }
+    public void setUserId(int userId) { this.userId = userId; }
 
     public String getStreet() { return street; }
     public void setStreet(String street) { this.street = street; }

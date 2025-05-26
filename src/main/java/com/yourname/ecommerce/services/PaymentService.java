@@ -1,36 +1,37 @@
 package com.yourname.ecommerce.services;
 
 import com.yourname.ecommerce.models.Order;
-import java.util.Random;
 import com.yourname.ecommerce.models.Payment;
+import com.yourname.ecommerce.utils.DBConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class PaymentService {
     private static final Random random = new Random();
-    private Connection connection;
 
-    public PaymentService(Connection connection) {
-        this.connection = connection;
+    public PaymentService() {
+        // No need to store connection since we'll use DBConnection.getConnection()
     }
 
     public boolean processPayment(Order order, String cardNumber, String expiryDate, String cvv) {
-        // Simulate payment processing
+        // Validate card details
         if (!isValidCard(cardNumber, expiryDate, cvv)) {
             return false;
         }
 
         // Simulate network delay
         try {
-            Thread.sleep(2000);
+            Thread.sleep(1000); // Reduced delay for better UX
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;
         }
 
-        // Simulate random success/failure (90% success rate)
-        return random.nextDouble() < 0.9;
+        // For demo purposes, we'll accept all valid cards
+        // In a real application, this would integrate with a payment gateway
+        return true;
     }
 
     private boolean isValidCard(String cardNumber, String expiryDate, String cvv) {
@@ -39,11 +40,11 @@ public class PaymentService {
             return false;
         }
 
-        if (expiryDate == null || !expiryDate.matches("\\d{2}/\\d{2}")) {
+        if (expiryDate == null || !expiryDate.matches("(0[1-9]|1[0-2])/([0-9]{2})")) {
             return false;
         }
 
-        if (cvv == null || cvv.length() != 3 || !cvv.matches("\\d+")) {
+        if (cvv == null || !cvv.matches("\\d{3,4}")) {
             return false;
         }
 
@@ -56,7 +57,6 @@ public class PaymentService {
             return false;
         }
 
-        // Add more validation as needed
         return true;
     }
 
@@ -69,7 +69,8 @@ public class PaymentService {
         String sql = "INSERT INTO payments (order_id, card_number, card_holder_name, expiry_date, " +
                     "cvv, amount, status, payment_date, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
-        try (PreparedStatement stmt = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             stmt.setInt(1, payment.getOrderId());
             stmt.setString(2, payment.getCardNumber());
             stmt.setString(3, payment.getCardHolderName());
@@ -91,13 +92,15 @@ public class PaymentService {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Error creating payment: " + e.getMessage());
         }
         return false;
     }
 
     public Payment getPaymentById(int id) {
         String sql = "SELECT * FROM payments WHERE id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -112,7 +115,8 @@ public class PaymentService {
     public List<Payment> getPaymentsByOrderId(int orderId) {
         List<Payment> payments = new ArrayList<>();
         String sql = "SELECT * FROM payments WHERE order_id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, orderId);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
@@ -126,12 +130,15 @@ public class PaymentService {
 
     public boolean updatePaymentStatus(int paymentId, String status) {
         String sql = "UPDATE payments SET status = ? WHERE id = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, status);
             stmt.setInt(2, paymentId);
-            return stmt.executeUpdate() > 0;
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Error updating payment status: " + e.getMessage());
         }
         return false;
     }

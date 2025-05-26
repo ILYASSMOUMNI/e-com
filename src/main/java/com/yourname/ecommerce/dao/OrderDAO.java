@@ -1,18 +1,19 @@
 package com.yourname.ecommerce.dao;
 
 import com.yourname.ecommerce.models.*;
+import com.yourname.ecommerce.utils.DBConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class OrderDAO {
-    private final DBConnection dbConnection;
     private final UserDAO userDAO;
+    private final AddressDAO addressDAO;
     
     public OrderDAO() {
-        this.dbConnection = DBConnection.getInstance();
         this.userDAO = new UserDAO();
+        this.addressDAO = new AddressDAO();
     }
     
     public List<Order> findAll() {
@@ -21,7 +22,7 @@ public class OrderDAO {
                       "JOIN users u ON o.user_id = u.id " +
                       "ORDER BY o.created_at DESC";
         
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             
@@ -43,7 +44,7 @@ public class OrderDAO {
                       "WHERE o.user_id = ? " +
                       "ORDER BY o.created_at DESC";
         
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, user.getId());
@@ -65,7 +66,7 @@ public class OrderDAO {
                       "JOIN users u ON o.user_id = u.id " +
                       "WHERE o.id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, id);
@@ -83,11 +84,30 @@ public class OrderDAO {
     }
     
     public Order create(Order order) {
-        String query = "INSERT INTO orders (user_id, subtotal, tax, total, status, shipping_address_id, " +
-                      "billing_address_id, payment_method, tracking_number, notes, transaction_id) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // First save the addresses
+        order.getShippingAddress().setUserId(order.getUser().getId());
+        Address savedShippingAddress = addressDAO.create(order.getShippingAddress());
+        if (savedShippingAddress == null) {
+            System.err.println("Failed to save shipping address");
+            return null;
+        }
         
-        try (Connection conn = dbConnection.getConnection();
+        order.getBillingAddress().setUserId(order.getUser().getId());
+        Address savedBillingAddress = addressDAO.create(order.getBillingAddress());
+        if (savedBillingAddress == null) {
+            System.err.println("Failed to save billing address");
+            return null;
+        }
+        
+        // Update order with saved addresses
+        order.setShippingAddress(savedShippingAddress);
+        order.setBillingAddress(savedBillingAddress);
+        
+        String query = "INSERT INTO orders (user_id, subtotal, tax, total, status, shipping_address_id, " +
+                      "billing_address_id, payment_method, tracking_number, notes) " +
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             
             stmt.setInt(1, order.getUser().getId());
@@ -100,7 +120,6 @@ public class OrderDAO {
             stmt.setString(8, order.getPaymentMethod().toString());
             stmt.setString(9, order.getTrackingNumber());
             stmt.setString(10, order.getNotes());
-            stmt.setString(11, order.getTransactionId());
             
             int affectedRows = stmt.executeUpdate();
             
@@ -111,13 +130,14 @@ public class OrderDAO {
                         System.out.println("OrderDAO.create: Order created with ID=" + order.getId()); // Debug log
                         
                         // Insert order items
-                        String insertOrderItemQuery = "INSERT INTO order_items (order_id, product_id, quantity, price_at_time) VALUES (?, ?, ?, ?)";
+                        String insertOrderItemQuery = "INSERT INTO order_items (order_id, product_id, quantity, price, tax) VALUES (?, ?, ?, ?, ?)";
                         try (PreparedStatement itemStmt = conn.prepareStatement(insertOrderItemQuery)) {
                             for (CartItem item : order.getItems()) {
                                 itemStmt.setInt(1, order.getId());
                                 itemStmt.setInt(2, item.getProduct().getId());
                                 itemStmt.setInt(3, item.getQuantity());
                                 itemStmt.setDouble(4, item.getProduct().getPrice());
+                                itemStmt.setDouble(5, item.getProduct().getPrice() * 0.20); // 20% tax rate
                                 itemStmt.executeUpdate();
                                 System.out.println("OrderDAO.create: Inserted order item for product ID=" + item.getProduct().getId() + ", quantity=" + item.getQuantity()); // Debug log
                             }
@@ -129,6 +149,7 @@ public class OrderDAO {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            System.err.println("Error creating order: " + e.getMessage());
         }
         
         return null;
@@ -138,7 +159,7 @@ public class OrderDAO {
         String query = "UPDATE orders SET status = ?, tracking_number = ?, notes = ?, " +
                       "updated_at = CURRENT_TIMESTAMP WHERE id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setString(1, order.getStatus().toString());
@@ -161,7 +182,7 @@ public class OrderDAO {
     public boolean delete(int id) {
         String query = "DELETE FROM orders WHERE id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, id);
@@ -186,7 +207,6 @@ public class OrderDAO {
         order.setPaymentMethod(Order.PaymentMethod.valueOf(rs.getString("o.payment_method")));
         order.setTrackingNumber(rs.getString("o.tracking_number"));
         order.setNotes(rs.getString("o.notes"));
-        order.setTransactionId(rs.getString("o.transaction_id"));
         
         User user = new User();
         user.setId(rs.getInt("u.id"));
@@ -211,7 +231,7 @@ public class OrderDAO {
                       "JOIN products p ON oi.product_id = p.id " +
                       "WHERE oi.order_id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
+        try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, order.getId());
