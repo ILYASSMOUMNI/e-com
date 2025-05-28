@@ -106,4 +106,13 @@ public class AppTheme {
             }
         }
     }
+    
+    public static void styleButtonDisabled(JButton button) {
+        button.setFont(BUTTON_FONT);
+        button.setForeground(Color.GRAY);
+        button.setBackground(new Color(200, 200, 200));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setEnabled(false);
+    }
 } 

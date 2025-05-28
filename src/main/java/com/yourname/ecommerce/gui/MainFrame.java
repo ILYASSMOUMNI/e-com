@@ -101,7 +101,7 @@ public class MainFrame extends JFrame {
         // Login form navigation
         loginForm.addLoginSuccessListener(user -> {
             currentUser = user;
-            checkoutForm = new CheckoutForm(currentUser);
+            checkoutForm = new CheckoutForm();
             mainPanel.add(checkoutForm, "CHECKOUT");
             AppTheme.applyTheme(checkoutForm);
             menuBar.setVisible(true);

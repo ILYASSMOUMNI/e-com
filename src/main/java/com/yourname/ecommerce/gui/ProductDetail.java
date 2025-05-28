@@ -210,7 +210,9 @@ public class ProductDetail extends JPanel {
                 File[] files = mediaFolder.listFiles();
                 if (files != null) {
                     for (File file : files) {
-                        System.out.println("- " + file.getName());
+                        System.out.println("- " + file.getName() + " (size: " + file.length() + " bytes)");
+                        System.out.println("  Can read: " + file.canRead());
+                        System.out.println("  Absolute path: " + file.getAbsolutePath());
                     }
                 }
 
@@ -218,26 +220,25 @@ public class ProductDetail extends JPanel {
                 String productName = currentProduct.getName();
                 File imageFile = null;
                 
-                // First try exact match
-                String pngPath = mediaFolder.getAbsolutePath() + File.separator + productName + ".png";
-                String webpPath = mediaFolder.getAbsolutePath() + File.separator + productName + ".webp";
+                // First try exact match with spaces
+                File pngFile = new File(mediaFolder, productName + ".png");
                 
-                System.out.println("Looking for image at:");
-                System.out.println("- PNG: " + pngPath);
-                System.out.println("- WebP: " + webpPath);
+                System.out.println("\nLooking for image at: " + pngFile.getAbsolutePath());
+                System.out.println("File exists: " + pngFile.exists());
+                System.out.println("Can read: " + pngFile.canRead());
+                System.out.println("File size: " + pngFile.length() + " bytes");
 
-                if (new File(pngPath).exists()) {
-                    imageFile = new File(pngPath);
-                } else if (new File(webpPath).exists()) {
-                    imageFile = new File(webpPath);
+                if (pngFile.exists() && pngFile.canRead()) {
+                    imageFile = pngFile;
                 } else {
-                    // Try case-insensitive search
+                    // Try case-insensitive search and handle spaces
                     if (files != null) {
+                        String searchName = productName.toLowerCase().trim();
                         for (File file : files) {
                             String fileName = file.getName().toLowerCase();
-                            if (fileName.equals(productName.toLowerCase() + ".png") || 
-                                fileName.equals(productName.toLowerCase() + ".webp")) {
+                            if (fileName.startsWith(searchName) && fileName.endsWith(".png")) {
                                 imageFile = file;
+                                System.out.println("\nFound matching file: " + file.getName());
                                 break;
                             }
                         }
@@ -245,7 +246,7 @@ public class ProductDetail extends JPanel {
                 }
 
                 if (imageFile == null || !imageFile.exists()) {
-                    System.out.println("Image file not found for product: " + productName);
+                    System.out.println("\nImage file not found for product: " + productName);
                     SwingUtilities.invokeLater(() -> {
                         imageLabel.setIcon(null);
                         imageLabel.setText("Image not found: " + productName);
@@ -254,44 +255,79 @@ public class ProductDetail extends JPanel {
                     return;
                 }
 
-                System.out.println("Loading image from: " + imageFile.getAbsolutePath());
+                System.out.println("\nAttempting to load image from: " + imageFile.getAbsolutePath());
                 
-                // Try loading the image using ImageIO
+                // Try different methods to load the image
+                BufferedImage image = null;
+                
+                // Method 1: ImageIO.read
                 try {
-                    BufferedImage image = ImageIO.read(imageFile);
+                    System.out.println("\nTrying ImageIO.read...");
+                    image = ImageIO.read(imageFile);
                     if (image != null) {
-                        System.out.println("Successfully loaded image: " + imageFile.getName());
-                        Image scaledImage = image.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-                        SwingUtilities.invokeLater(() -> {
-                            imageLabel.setIcon(new ImageIcon(scaledImage));
-                            imageLabel.setText("");
-                        });
+                        System.out.println("ImageIO.read successful!");
+                        System.out.println("Image dimensions: " + image.getWidth() + "x" + image.getHeight());
                     } else {
-                        throw new Exception("ImageIO.read returned null");
+                        System.out.println("ImageIO.read returned null");
                     }
                 } catch (Exception e) {
-                    System.out.println("Failed to read image using ImageIO: " + e.getMessage());
-                    // Try alternative loading method
+                    System.out.println("ImageIO.read failed: " + e.getMessage());
+                }
+
+                // Method 2: Toolkit.getDefaultToolkit().getImage
+                if (image == null) {
                     try {
+                        System.out.println("\nTrying Toolkit.getImage...");
+                        java.awt.Image toolkitImage = java.awt.Toolkit.getDefaultToolkit().getImage(imageFile.getAbsolutePath());
+                        // Convert to BufferedImage
+                        image = new BufferedImage(400, 400, BufferedImage.TYPE_INT_ARGB);
+                        java.awt.Graphics2D g2d = image.createGraphics();
+                        if (g2d.drawImage(toolkitImage, 0, 0, 400, 400, null)) {
+                            System.out.println("Toolkit.getImage successful!");
+                        } else {
+                            System.out.println("Toolkit.getImage failed to draw image");
+                            image = null;
+                        }
+                        g2d.dispose();
+                    } catch (Exception e) {
+                        System.out.println("Toolkit.getImage failed: " + e.getMessage());
+                    }
+                }
+
+                // Method 3: ImageIcon
+                if (image == null) {
+                    try {
+                        System.out.println("\nTrying ImageIcon...");
                         ImageIcon icon = new ImageIcon(imageFile.getAbsolutePath());
                         if (icon.getIconWidth() > 0) {
-                            System.out.println("Successfully loaded image using ImageIcon: " + imageFile.getName());
-                            Image scaledImage = icon.getImage().getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-                            SwingUtilities.invokeLater(() -> {
-                                imageLabel.setIcon(new ImageIcon(scaledImage));
-                                imageLabel.setText("");
-                            });
+                            System.out.println("ImageIcon successful!");
+                            java.awt.Image iconImage = icon.getImage();
+                            // Convert to BufferedImage
+                            image = new BufferedImage(400, 400, BufferedImage.TYPE_INT_ARGB);
+                            java.awt.Graphics2D g2d = image.createGraphics();
+                            g2d.drawImage(iconImage, 0, 0, 400, 400, null);
+                            g2d.dispose();
                         } else {
-                            throw new Exception("ImageIcon width is 0");
+                            System.out.println("ImageIcon failed (width is 0)");
                         }
-                    } catch (Exception e2) {
-                        System.out.println("Failed to read image using ImageIcon: " + e2.getMessage());
-                        SwingUtilities.invokeLater(() -> {
-                            imageLabel.setIcon(null);
-                            imageLabel.setText("Error loading image");
-                            imageLabel.setFont(AppTheme.HEADER_FONT);
-                        });
+                    } catch (Exception e) {
+                        System.out.println("ImageIcon failed: " + e.getMessage());
                     }
+                }
+
+                if (image != null) {
+                    final BufferedImage finalImage = image;
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(new ImageIcon(finalImage));
+                        imageLabel.setText("");
+                    });
+                } else {
+                    System.out.println("\nAll image loading methods failed");
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(null);
+                        imageLabel.setText("Error loading image");
+                        imageLabel.setFont(AppTheme.HEADER_FONT);
+                    });
                 }
             } catch (Exception e) {
                 System.out.println("Error loading image for " + currentProduct.getName() + ": " + e.getMessage());

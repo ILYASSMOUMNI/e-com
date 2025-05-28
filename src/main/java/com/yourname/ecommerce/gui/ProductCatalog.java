@@ -10,6 +10,9 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.io.File;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 
 public class ProductCatalog extends JPanel {
     private JPanel productsPanel;
@@ -166,28 +169,67 @@ public class ProductCatalog extends JPanel {
         // Load image from media folder
         new Thread(() -> {
             try {
-                String imagePath = "media/" + product.getName() + ".png";
-                // Try PNG first, then WebP
-                if (!new java.io.File(imagePath).exists()) {
-                    imagePath = "media/" + product.getName() + ".webp";
-                }
-                java.awt.Image image = javax.imageio.ImageIO.read(new java.io.File(imagePath));
-                if (image != null) {
-                    Image scaledImage = image.getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+                File mediaFolder = new File("media");
+                if (!mediaFolder.exists()) {
                     SwingUtilities.invokeLater(() -> {
-                        imageLabel.setIcon(new ImageIcon(scaledImage));
-                        imageLabel.setText("");
+                        imageLabel.setIcon(null);
+                        imageLabel.setText("Media folder not found");
                     });
+                    return;
+                }
+
+                String productName = product.getName();
+                File imageFile = null;
+
+                // Try exact match with spaces
+                File pngFile = new File(mediaFolder, productName + ".png");
+                File webpFile = new File(mediaFolder, productName + ".webp");
+
+                if (pngFile.exists()) {
+                    imageFile = pngFile;
+                } else if (webpFile.exists()) {
+                    imageFile = webpFile;
+                } else {
+                    // Try case-insensitive search and handle spaces
+                    File[] files = mediaFolder.listFiles();
+                    if (files != null) {
+                        String searchName = productName.toLowerCase().trim();
+                        for (File file : files) {
+                            String fileName = file.getName().toLowerCase();
+                            if (fileName.startsWith(searchName) && 
+                                (fileName.endsWith(".png") || fileName.endsWith(".webp"))) {
+                                imageFile = file;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (imageFile != null && imageFile.exists()) {
+                    BufferedImage image = ImageIO.read(imageFile);
+                    if (image != null) {
+                        Image scaledImage = image.getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+                        SwingUtilities.invokeLater(() -> {
+                            imageLabel.setIcon(new ImageIcon(scaledImage));
+                            imageLabel.setText("");
+                        });
+                    } else {
+                        SwingUtilities.invokeLater(() -> {
+                            imageLabel.setIcon(null);
+                            imageLabel.setText("Error loading image");
+                        });
+                    }
                 } else {
                     SwingUtilities.invokeLater(() -> {
                         imageLabel.setIcon(null);
-                        imageLabel.setText("No image");
+                        imageLabel.setText("No image found");
                     });
                 }
             } catch (Exception e) {
+                System.out.println("Error loading image for " + product.getName() + ": " + e.getMessage());
                 SwingUtilities.invokeLater(() -> {
                     imageLabel.setIcon(null);
-                    imageLabel.setText("No image");
+                    imageLabel.setText("Error loading image");
                 });
             }
         }).start();

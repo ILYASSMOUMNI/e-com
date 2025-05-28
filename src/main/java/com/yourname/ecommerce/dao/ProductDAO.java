@@ -25,29 +25,29 @@ public class ProductDAO {
         
         // Electronics
         products.add(new Product(1, "iPhone 13", "Latest Apple smartphone with A15 Bionic chip", 999.99, 50, 
-            "https://example.com/iphone13.jpg", electronics));
+            "media/iPhone 13.png", electronics));
         products.add(new Product(2, "Samsung Galaxy S21", "Powerful Android smartphone", 799.99, 45, 
-            "https://example.com/galaxys21.jpg", electronics));
+            "media/Samsung Galaxy S21.png", electronics));
         products.add(new Product(3, "MacBook Pro", "Professional laptop for developers", 1299.99, 30, 
-            "https://example.com/macbook.jpg", electronics));
+            "media/MacBook Pro.png", electronics));
         
         // Clothing
         products.add(new Product(4, "Men's T-Shirt", "Cotton casual t-shirt", 29.99, 100, 
-            "https://example.com/tshirt.jpg", clothing));
+            "media/Men's T-Shirt.png", clothing));
         products.add(new Product(5, "Women's Dress", "Elegant summer dress", 59.99, 75, 
-            "https://example.com/dress.jpg", clothing));
+            "media/Women's Dress.png", clothing));
         
         // Books
         products.add(new Product(6, "Java Programming", "Complete guide to Java development", 49.99, 60, 
-            "https://example.com/javabook.jpg", books));
+            "media/Java Programming.png", books));
         products.add(new Product(7, "Data Structures", "Advanced data structures and algorithms", 39.99, 40, 
-            "https://example.com/dsbook.jpg", books));
+            "media/Data Structures.png", books));
         
         // Home & Kitchen
         products.add(new Product(8, "Coffee Maker", "Automatic coffee maker", 89.99, 25, 
-            "https://example.com/coffee.jpg", homeKitchen));
+            "media/Coffee Maker.png", homeKitchen));
         products.add(new Product(9, "Blender", "High-speed blender", 69.99, 35, 
-            "https://example.com/blender.jpg", homeKitchen));
+            "media/Blender.png", homeKitchen));
     }
     
     public List<Product> findAll() {
