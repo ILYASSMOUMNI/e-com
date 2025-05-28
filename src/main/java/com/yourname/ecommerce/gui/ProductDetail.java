@@ -316,9 +316,32 @@ public class ProductDetail extends JPanel {
                 }
 
                 if (image != null) {
-                    final BufferedImage finalImage = image;
+                    // Scale image to fit perfectly in 400x400, preserving aspect ratio
+                    int labelWidth = 400;
+                    int labelHeight = 400;
+                    int imgWidth = image.getWidth();
+                    int imgHeight = image.getHeight();
+                    double widthRatio = (double) labelWidth / imgWidth;
+                    double heightRatio = (double) labelHeight / imgHeight;
+                    double scale = Math.min(widthRatio, heightRatio);
+                    int newWidth = (int) (imgWidth * scale);
+                    int newHeight = (int) (imgHeight * scale);
+
+                    Image scaledImage = image.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH);
+
+                    // Create a new BufferedImage with the label size and draw the scaled image centered
+                    BufferedImage centeredImage = new BufferedImage(labelWidth, labelHeight, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g2d = centeredImage.createGraphics();
+                    g2d.setComposite(AlphaComposite.Clear);
+                    g2d.fillRect(0, 0, labelWidth, labelHeight);
+                    g2d.setComposite(AlphaComposite.SrcOver);
+                    int x = (labelWidth - newWidth) / 2;
+                    int y = (labelHeight - newHeight) / 2;
+                    g2d.drawImage(scaledImage, x, y, null);
+                    g2d.dispose();
+
                     SwingUtilities.invokeLater(() -> {
-                        imageLabel.setIcon(new ImageIcon(finalImage));
+                        imageLabel.setIcon(new ImageIcon(centeredImage));
                         imageLabel.setText("");
                     });
                 } else {
