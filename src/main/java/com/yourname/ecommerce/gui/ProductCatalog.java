@@ -162,6 +162,36 @@ public class ProductCatalog extends JPanel {
         imageLabel.setPreferredSize(new Dimension(200, 200));
         imageLabel.setMaximumSize(new Dimension(200, 200));
         imageLabel.setBorder(BorderFactory.createLineBorder(AppTheme.BACKGROUND_COLOR));
+        
+        // Load image from media folder
+        new Thread(() -> {
+            try {
+                String imagePath = "media/" + product.getName() + ".png";
+                // Try PNG first, then WebP
+                if (!new java.io.File(imagePath).exists()) {
+                    imagePath = "media/" + product.getName() + ".webp";
+                }
+                java.awt.Image image = javax.imageio.ImageIO.read(new java.io.File(imagePath));
+                if (image != null) {
+                    Image scaledImage = image.getScaledInstance(200, 200, Image.SCALE_SMOOTH);
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(new ImageIcon(scaledImage));
+                        imageLabel.setText("");
+                    });
+                } else {
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(null);
+                        imageLabel.setText("No image");
+                    });
+                }
+            } catch (Exception e) {
+                SwingUtilities.invokeLater(() -> {
+                    imageLabel.setIcon(null);
+                    imageLabel.setText("No image");
+                });
+            }
+        }).start();
+        
         card.add(imageLabel);
 
         // Product name

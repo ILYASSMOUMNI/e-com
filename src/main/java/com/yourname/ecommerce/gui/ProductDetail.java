@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import com.yourname.ecommerce.models.Product;
+import java.io.File;
 
 public class ProductDetail extends JPanel {
     private JLabel imageLabel;
@@ -192,22 +193,109 @@ public class ProductDetail extends JPanel {
     private void loadImage() {
         new Thread(() -> {
             try {
-                URL url = new URL(imageUrl);
-                BufferedImage image = ImageIO.read(url);
-                if (image != null) {
-                    Image scaledImage = image.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-                    SwingUtilities.invokeLater(() -> {
-                        imageLabel.setIcon(new ImageIcon(scaledImage));
-                        imageLabel.setText("");
-                    });
-                } else {
+                // Get the absolute path to the media folder
+                File mediaFolder = new File("media");
+                if (!mediaFolder.exists()) {
+                    System.out.println("Media folder not found at: " + mediaFolder.getAbsolutePath());
                     SwingUtilities.invokeLater(() -> {
                         imageLabel.setIcon(null);
-                        imageLabel.setText("Image not available");
+                        imageLabel.setText("Media folder not found");
                         imageLabel.setFont(AppTheme.HEADER_FONT);
                     });
+                    return;
+                }
+
+                // List all files in the media folder for debugging
+                System.out.println("Files in media folder:");
+                File[] files = mediaFolder.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        System.out.println("- " + file.getName());
+                    }
+                }
+
+                // Try to find the image file
+                String productName = currentProduct.getName();
+                File imageFile = null;
+                
+                // First try exact match
+                String pngPath = mediaFolder.getAbsolutePath() + File.separator + productName + ".png";
+                String webpPath = mediaFolder.getAbsolutePath() + File.separator + productName + ".webp";
+                
+                System.out.println("Looking for image at:");
+                System.out.println("- PNG: " + pngPath);
+                System.out.println("- WebP: " + webpPath);
+
+                if (new File(pngPath).exists()) {
+                    imageFile = new File(pngPath);
+                } else if (new File(webpPath).exists()) {
+                    imageFile = new File(webpPath);
+                } else {
+                    // Try case-insensitive search
+                    if (files != null) {
+                        for (File file : files) {
+                            String fileName = file.getName().toLowerCase();
+                            if (fileName.equals(productName.toLowerCase() + ".png") || 
+                                fileName.equals(productName.toLowerCase() + ".webp")) {
+                                imageFile = file;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (imageFile == null || !imageFile.exists()) {
+                    System.out.println("Image file not found for product: " + productName);
+                    SwingUtilities.invokeLater(() -> {
+                        imageLabel.setIcon(null);
+                        imageLabel.setText("Image not found: " + productName);
+                        imageLabel.setFont(AppTheme.HEADER_FONT);
+                    });
+                    return;
+                }
+
+                System.out.println("Loading image from: " + imageFile.getAbsolutePath());
+                
+                // Try loading the image using ImageIO
+                try {
+                    BufferedImage image = ImageIO.read(imageFile);
+                    if (image != null) {
+                        System.out.println("Successfully loaded image: " + imageFile.getName());
+                        Image scaledImage = image.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
+                        SwingUtilities.invokeLater(() -> {
+                            imageLabel.setIcon(new ImageIcon(scaledImage));
+                            imageLabel.setText("");
+                        });
+                    } else {
+                        throw new Exception("ImageIO.read returned null");
+                    }
+                } catch (Exception e) {
+                    System.out.println("Failed to read image using ImageIO: " + e.getMessage());
+                    // Try alternative loading method
+                    try {
+                        ImageIcon icon = new ImageIcon(imageFile.getAbsolutePath());
+                        if (icon.getIconWidth() > 0) {
+                            System.out.println("Successfully loaded image using ImageIcon: " + imageFile.getName());
+                            Image scaledImage = icon.getImage().getScaledInstance(400, 400, Image.SCALE_SMOOTH);
+                            SwingUtilities.invokeLater(() -> {
+                                imageLabel.setIcon(new ImageIcon(scaledImage));
+                                imageLabel.setText("");
+                            });
+                        } else {
+                            throw new Exception("ImageIcon width is 0");
+                        }
+                    } catch (Exception e2) {
+                        System.out.println("Failed to read image using ImageIcon: " + e2.getMessage());
+                        SwingUtilities.invokeLater(() -> {
+                            imageLabel.setIcon(null);
+                            imageLabel.setText("Error loading image");
+                            imageLabel.setFont(AppTheme.HEADER_FONT);
+                        });
+                    }
                 }
             } catch (Exception e) {
+                System.out.println("Error loading image for " + currentProduct.getName() + ": " + e.getMessage());
+                e.printStackTrace();
                 SwingUtilities.invokeLater(() -> {
                     imageLabel.setIcon(null);
                     imageLabel.setText("Error loading image");
