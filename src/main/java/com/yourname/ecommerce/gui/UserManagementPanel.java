@@ -6,6 +6,7 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
+import javax.swing.border.EmptyBorder;
 
 public class UserManagementPanel extends JPanel {
     private JTable userTable;
@@ -20,6 +21,11 @@ public class UserManagementPanel extends JPanel {
     public UserManagementPanel(UserService userService) {
         this.userService = userService;
         setLayout(new BorderLayout());
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        setBackground(AppTheme.BACKGROUND_COLOR);
         initializeComponents();
         setupLayout();
         loadUsers();
@@ -37,6 +43,33 @@ public class UserManagementPanel extends JPanel {
         
         userTable = new JTable(tableModel);
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        userTable.setRowHeight(28);
+        userTable.setFont(AppTheme.NORMAL_FONT);
+        userTable.setBackground(Color.WHITE);
+        userTable.setShowGrid(false);
+        userTable.setForeground(AppTheme.TEXT_COLOR);
+        
+        // Style table header
+        JTableHeader header = userTable.getTableHeader();
+        header.setFont(AppTheme.HEADER_FONT);
+        header.setBackground(AppTheme.PRIMARY_COLOR);
+        header.setForeground(AppTheme.TEXT_COLOR);
+        header.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // Alternating row colors
+        userTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setForeground(AppTheme.TEXT_COLOR);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
+                } else {
+                    c.setBackground(new Color(220, 235, 252));
+                }
+                return c;
+            }
+        });
         
         // Initialize buttons
         addButton = new JButton("Add User");
@@ -49,6 +82,12 @@ public class UserManagementPanel extends JPanel {
         editButton.addActionListener(e -> showEditUserDialog());
         deleteButton.addActionListener(e -> deleteSelectedUser());
         refreshButton.addActionListener(e -> loadUsers());
+        
+        // Style buttons
+        AppTheme.applyTheme(addButton);
+        AppTheme.applyTheme(editButton);
+        AppTheme.applyTheme(deleteButton);
+        AppTheme.applyTheme(refreshButton);
     }
     
     private void setupLayout() {
@@ -58,6 +97,10 @@ public class UserManagementPanel extends JPanel {
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(refreshButton);
+        
+        // Style button panel
+        buttonPanel.setBackground(AppTheme.BACKGROUND_COLOR);
+        buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
         
         // Add components to panel
         add(new JScrollPane(userTable), BorderLayout.CENTER);

@@ -7,6 +7,7 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
 import java.text.SimpleDateFormat;
+import javax.swing.border.EmptyBorder;
 
 public class OrderManagementPanel extends JPanel {
     private final OrderService orderService;
@@ -20,6 +21,12 @@ public class OrderManagementPanel extends JPanel {
         this.orderService = new OrderService();
         setLayout(new BorderLayout());
         
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        setBackground(AppTheme.BACKGROUND_COLOR);
+        
         // Create table model
         String[] columns = {"Order ID", "Customer", "Date", "Total", "Status", "Actions"};
         tableModel = new DefaultTableModel(columns, 0) {
@@ -31,7 +38,35 @@ public class OrderManagementPanel extends JPanel {
         
         // Create table
         orderTable = new JTable(tableModel);
-        orderTable.setRowHeight(40);
+        orderTable.setRowHeight(28);
+        orderTable.setFont(AppTheme.NORMAL_FONT);
+        orderTable.setBackground(Color.WHITE);
+        orderTable.setShowGrid(false);
+        orderTable.setForeground(AppTheme.TEXT_COLOR);
+        
+        // Style table header
+        JTableHeader header = orderTable.getTableHeader();
+        header.setFont(AppTheme.HEADER_FONT);
+        header.setBackground(AppTheme.PRIMARY_COLOR);
+        header.setForeground(AppTheme.TEXT_COLOR);
+        header.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // Alternating row colors
+        orderTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setForeground(AppTheme.TEXT_COLOR);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
+                } else {
+                    c.setBackground(new Color(220, 235, 252));
+                }
+                return c;
+            }
+        });
+        
+        // After orderTable is created and before adding it to the scroll pane, add:
         orderTable.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer());
         orderTable.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(new JCheckBox()));
         
@@ -61,6 +96,13 @@ public class OrderManagementPanel extends JPanel {
         filterPanel.add(refreshButton);
         
         add(filterPanel, BorderLayout.NORTH);
+        
+        // Style filter panel
+        filterPanel.setBackground(AppTheme.BACKGROUND_COLOR);
+        filterPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+        
+        // Style statusFilter combo box
+        statusFilter.setFont(AppTheme.NORMAL_FONT);
         
         // Load initial data
         loadOrders();

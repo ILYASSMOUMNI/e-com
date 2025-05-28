@@ -2,6 +2,7 @@ package com.yourname.ecommerce.gui;
 
 import com.yourname.ecommerce.models.User;
 import com.yourname.ecommerce.models.Order;
+import com.yourname.ecommerce.models.CartItem;
 import com.yourname.ecommerce.services.OrderService;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -72,7 +73,7 @@ public class OrderHistory extends JPanel {
                 tableModel.addRow(new Object[]{
                     order.getId(),
                     order.getOrderDate(),
-                    String.format("$%.2f", order.getTotalAmount()),
+                    String.format("$%.2f", order.getTotal()),
                     order.getStatus()
                 });
             }
@@ -86,9 +87,101 @@ public class OrderHistory extends JPanel {
             return;
         }
 
-        String orderId = (String) tableModel.getValueAt(selectedRow, 0);
-        // TODO: Implement order details view
-        JOptionPane.showMessageDialog(this, "Viewing details for order: " + orderId, "Order Details", JOptionPane.INFORMATION_MESSAGE);
+        int orderId = (int) tableModel.getValueAt(selectedRow, 0);
+        Order order = orderService.getOrderById(orderId);
+        
+        if (order == null) {
+            JOptionPane.showMessageDialog(this, "Could not load order details", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Create and show order details dialog
+        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Order Details", true);
+        dialog.setLayout(new BorderLayout());
+        
+        // Create details panel
+        JPanel detailsPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Add order details
+        gbc.gridx = 0; gbc.gridy = 0;
+        detailsPanel.add(new JLabel("Order ID:"), gbc);
+        gbc.gridx = 1;
+        detailsPanel.add(new JLabel(String.valueOf(order.getId())), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 1;
+        detailsPanel.add(new JLabel("Date:"), gbc);
+        gbc.gridx = 1;
+        detailsPanel.add(new JLabel(order.getOrderDate().toString()), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 2;
+        detailsPanel.add(new JLabel("Status:"), gbc);
+        gbc.gridx = 1;
+        detailsPanel.add(new JLabel(order.getStatus().toString()), gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 3;
+        detailsPanel.add(new JLabel("Total:"), gbc);
+        gbc.gridx = 1;
+        detailsPanel.add(new JLabel(String.format("$%.2f", order.getTotal())), gbc);
+        
+        // Add items table
+        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 5, 5, 5);
+        
+        String[] columns = {"Product", "Quantity", "Price", "Subtotal"};
+        DefaultTableModel itemsModel = new DefaultTableModel(columns, 0);
+        JTable itemsTable = new JTable(itemsModel);
+        
+        for (CartItem item : order.getItems()) {
+            Object[] row = {
+                item.getProduct().getName(),
+                item.getQuantity(),
+                String.format("$%.2f", item.getProduct().getPrice()),
+                String.format("$%.2f", item.getProduct().getPrice() * item.getQuantity())
+            };
+            itemsModel.addRow(row);
+        }
+        
+        detailsPanel.add(new JScrollPane(itemsTable), gbc);
+        
+        // Add shipping and billing address information
+        gbc.gridy = 5;
+        gbc.insets = new Insets(20, 5, 5, 5);
+        
+        JPanel addressPanel = new JPanel(new GridLayout(2, 1, 5, 5));
+        
+        // Shipping Address
+        JPanel shippingPanel = new JPanel(new BorderLayout());
+        shippingPanel.setBorder(BorderFactory.createTitledBorder("Shipping Address"));
+        JTextArea shippingAddress = new JTextArea(order.getShippingAddress().toString());
+        shippingAddress.setEditable(false);
+        shippingPanel.add(shippingAddress, BorderLayout.CENTER);
+        
+        // Billing Address
+        JPanel billingPanel = new JPanel(new BorderLayout());
+        billingPanel.setBorder(BorderFactory.createTitledBorder("Billing Address"));
+        JTextArea billingAddress = new JTextArea(order.getBillingAddress().toString());
+        billingAddress.setEditable(false);
+        billingPanel.add(billingAddress, BorderLayout.CENTER);
+        
+        addressPanel.add(shippingPanel);
+        addressPanel.add(billingPanel);
+        
+        detailsPanel.add(addressPanel, gbc);
+        
+        dialog.add(detailsPanel, BorderLayout.CENTER);
+        
+        // Add close button
+        JButton closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> dialog.dispose());
+        dialog.add(closeButton, BorderLayout.SOUTH);
+        
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
     private void goBack() {

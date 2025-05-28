@@ -54,7 +54,6 @@ public class MainFrame extends JFrame {
         userProfile = new UserProfile();
         orderHistory = new OrderHistory();
         productDetail = new ProductDetail();
-        checkoutForm = new CheckoutForm();
         adminDashboard = new AdminDashboard();
 
         menuBar = new JMenuBar();
@@ -70,7 +69,6 @@ public class MainFrame extends JFrame {
         mainPanel.add(userProfile, "PROFILE");
         mainPanel.add(orderHistory, "ORDERS");
         mainPanel.add(productDetail, "PRODUCT_DETAIL");
-        mainPanel.add(checkoutForm, "CHECKOUT");
         mainPanel.add(adminDashboard, "ADMIN_DASHBOARD");
 
         add(mainPanel);
@@ -103,6 +101,9 @@ public class MainFrame extends JFrame {
         // Login form navigation
         loginForm.addLoginSuccessListener(user -> {
             currentUser = user;
+            checkoutForm = new CheckoutForm(currentUser);
+            mainPanel.add(checkoutForm, "CHECKOUT");
+            AppTheme.applyTheme(checkoutForm);
             menuBar.setVisible(true);
             setupMenuBar();
             if (user.isAdmin()) {
@@ -170,9 +171,13 @@ public class MainFrame extends JFrame {
         });
 
         // Checkout form navigation
-        checkoutForm.addBackToCartListener(() -> {
-            cardLayout.show(mainPanel, "CART");
-        });
+        if (checkoutForm != null) {
+            checkoutForm.addBackToCartListener(() -> {
+                cardLayout.show(mainPanel, "CART");
+            });
+        } else {
+            System.err.println("checkoutForm is null. Cannot add back to cart listener.");
+        }
     }
     
     private void setupMenuBar() {
@@ -267,4 +272,4 @@ public class MainFrame extends JFrame {
             frame.setVisible(true);
         });
     }
-} 
+}

@@ -6,6 +6,7 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
+import javax.swing.border.EmptyBorder;
 
 public class CategoryManagementPanel extends JPanel {
     private JTable categoryTable;
@@ -20,6 +21,11 @@ public class CategoryManagementPanel extends JPanel {
     public CategoryManagementPanel(CategoryService categoryService) {
         this.categoryService = categoryService;
         setLayout(new BorderLayout());
+        setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(AppTheme.PRIMARY_COLOR, 1),
+            BorderFactory.createEmptyBorder(15, 15, 15, 15)
+        ));
+        setBackground(AppTheme.BACKGROUND_COLOR);
         initializeComponents();
         setupLayout();
         loadCategories();
@@ -37,12 +43,45 @@ public class CategoryManagementPanel extends JPanel {
         
         categoryTable = new JTable(tableModel);
         categoryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        categoryTable.setRowHeight(28);
+        categoryTable.setFont(AppTheme.NORMAL_FONT);
+        categoryTable.setBackground(Color.WHITE);
+        categoryTable.setShowGrid(false);
+        categoryTable.setForeground(AppTheme.TEXT_COLOR);
+        
+        // Style table header
+        JTableHeader header = categoryTable.getTableHeader();
+        header.setFont(AppTheme.HEADER_FONT);
+        header.setBackground(AppTheme.PRIMARY_COLOR);
+        header.setForeground(AppTheme.TEXT_COLOR);
+        header.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // Alternating row colors
+        categoryTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setForeground(AppTheme.TEXT_COLOR);
+                if (!isSelected) {
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
+                } else {
+                    c.setBackground(new Color(220, 235, 252));
+                }
+                return c;
+            }
+        });
         
         // Initialize buttons
         addButton = new JButton("Add Category");
         editButton = new JButton("Edit Category");
         deleteButton = new JButton("Delete Category");
         refreshButton = new JButton("Refresh");
+        
+        // Style buttons
+        AppTheme.applyTheme(addButton);
+        AppTheme.applyTheme(editButton);
+        AppTheme.applyTheme(deleteButton);
+        AppTheme.applyTheme(refreshButton);
         
         // Add action listeners
         addButton.addActionListener(e -> showAddCategoryDialog());
@@ -53,14 +92,20 @@ public class CategoryManagementPanel extends JPanel {
     
     private void setupLayout() {
         // Create button panel
-        JPanel buttonPanel = new JPanel();
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
+        buttonPanel.setBackground(AppTheme.BACKGROUND_COLOR);
+        buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
         buttonPanel.add(addButton);
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(refreshButton);
         
         // Add components to panel
-        add(new JScrollPane(categoryTable), BorderLayout.CENTER);
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(AppTheme.BACKGROUND_COLOR);
+        tablePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        tablePanel.add(new JScrollPane(categoryTable), BorderLayout.CENTER);
+        add(tablePanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
     }
     
@@ -109,7 +154,10 @@ public class CategoryManagementPanel extends JPanel {
             dialog.dispose();
         });
         
-        panel.add(saveButton);
+        AppTheme.applyTheme(saveButton);
+        panel.setBackground(AppTheme.BACKGROUND_COLOR);
+        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
         dialog.add(panel);
         dialog.pack();
         dialog.setLocationRelativeTo(this);
@@ -158,7 +206,10 @@ public class CategoryManagementPanel extends JPanel {
             dialog.dispose();
         });
         
-        panel.add(saveButton);
+        AppTheme.applyTheme(saveButton);
+        panel.setBackground(AppTheme.BACKGROUND_COLOR);
+        panel.setBorder(new EmptyBorder(15, 15, 15, 15));
+        
         dialog.add(panel);
         dialog.pack();
         dialog.setLocationRelativeTo(this);
