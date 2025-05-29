@@ -12,7 +12,9 @@ public class OrderService {
     }
     
     public List<Order> getAllOrders() {
+        System.out.println("OrderService: Retrieving all orders"); // Debug log
         List<Order> orders = orderDAO.findAll();
+        System.out.println("OrderService: Found " + orders.size() + " orders for user");
         return orders;
     }
     

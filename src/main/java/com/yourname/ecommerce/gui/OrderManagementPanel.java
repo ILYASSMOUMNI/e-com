@@ -114,16 +114,23 @@ public class OrderManagementPanel extends JPanel {
         
         // Get all orders
         List<Order> orders = orderService.getAllOrders();
+        System.out.println("Total orders retrieved: " + orders.size()); // Debug log
         
         // Apply filters
         String statusFilter = (String) this.statusFilter.getSelectedItem();
         String searchText = searchField.getText().toLowerCase();
         
+        System.out.println("Current filters - Status: " + statusFilter + ", Search: " + searchText); // Debug log
+        
+        int filteredCount = 0;
         for (Order order : orders) {
             // Skip if status doesn't match
             if (!statusFilter.equals("All") && !order.getStatus().toString().equals(statusFilter)) {
+                filteredCount++;
+                System.out.println("Filtered out order " + order.getId() + " due to status mismatch"); // Debug log
                 continue;
             }
+            
             // Skip if search text doesn't match
             if (!searchText.isEmpty()) {
                 boolean matches = false;
@@ -132,9 +139,12 @@ public class OrderManagementPanel extends JPanel {
                              order.getUser().getEmail().toLowerCase().contains(searchText);
                 }
                 if (!matches) {
+                    filteredCount++;
+                    System.out.println("Filtered out order " + order.getId() + " due to search text mismatch"); // Debug log
                     continue;
                 }
             }
+            
             // Add order to table
             Object[] row = {
                 order.getId(),
@@ -146,6 +156,9 @@ public class OrderManagementPanel extends JPanel {
             };
             tableModel.addRow(row);
         }
+        
+        System.out.println("Orders filtered out: " + filteredCount); // Debug log
+        System.out.println("Orders displayed: " + tableModel.getRowCount()); // Debug log
     }
     
     private class ButtonRenderer extends JButton implements TableCellRenderer {

@@ -18,17 +18,50 @@ public class OrderDAO {
     
     public List<Order> findAll() {
         List<Order> orders = new ArrayList<>();
-        String query = "SELECT o.*, u.* FROM orders o " +
-                      "JOIN users u ON o.user_id = u.id " +
+        String query = "SELECT o.*, u.*, oi.id as item_id, oi.quantity, oi.price, oi.tax, " +
+                      "p.id as product_id, p.name as product_name, p.description as product_description, p.price as product_price " +
+                      "FROM orders o " +
+                      "LEFT JOIN users u ON o.user_id = u.id " +
+                      "LEFT JOIN order_items oi ON o.id = oi.order_id " +
+                      "LEFT JOIN products p ON oi.product_id = p.id " +
                       "ORDER BY o.created_at DESC";
         
         try (Connection conn = DBConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
+             Statement stmt = conn.createStatement()) {
             
-            while (rs.next()) {
-                Order order = mapResultSetToOrderAndUser(rs);
-                orders.add(order);
+            try (ResultSet rs = stmt.executeQuery(query)) {
+                Order currentOrder = null;
+                while (rs.next()) {
+                    int orderId = rs.getInt("o.id");
+                    
+                    if (currentOrder == null || currentOrder.getId() != orderId) {
+                        if (currentOrder != null) {
+                            orders.add(currentOrder);
+                        }
+                        currentOrder = mapResultSetToOrderAndUser(rs);
+                    }
+                    
+                    // Add item if it exists
+                    int itemId = rs.getInt("item_id");
+                    if (!rs.wasNull()) {
+                        Product product = new Product();
+                        product.setId(rs.getInt("product_id"));
+                        product.setName(rs.getString("product_name"));
+                        product.setDescription(rs.getString("product_description"));
+                        product.setPrice(rs.getDouble("product_price"));
+                        
+                        CartItem item = new CartItem();
+                        item.setProduct(product);
+                        item.setQuantity(rs.getInt("quantity"));
+                        
+                        currentOrder.addItem(item);
+                    }
+                }
+                
+                // Add the last order
+                if (currentOrder != null) {
+                    orders.add(currentOrder);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -40,7 +73,7 @@ public class OrderDAO {
     public List<Order> findByUser(User user) {
         List<Order> orders = new ArrayList<>();
         String query = "SELECT o.*, u.* FROM orders o " +
-                      "JOIN users u ON o.user_id = u.id " +
+                      "LEFT JOIN users u ON o.user_id = u.id " +
                       "WHERE o.user_id = ? " +
                       "ORDER BY o.created_at DESC";
         
@@ -48,11 +81,11 @@ public class OrderDAO {
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, user.getId());
-            ResultSet rs = stmt.executeQuery();
-            
-            while (rs.next()) {
-                Order order = mapResultSetToOrderAndUser(rs);
-                orders.add(order);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Order order = mapResultSetToOrderAndUser(rs);
+                    orders.add(order);
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -63,18 +96,18 @@ public class OrderDAO {
     
     public Order findById(int id) {
         String query = "SELECT o.*, u.* FROM orders o " +
-                      "JOIN users u ON o.user_id = u.id " +
+                      "LEFT JOIN users u ON o.user_id = u.id " +
                       "WHERE o.id = ?";
         
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, id);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                Order order = mapResultSetToOrderAndUser(rs);
-                return order;
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Order order = mapResultSetToOrderAndUser(rs);
+                    return order;
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -208,20 +241,23 @@ public class OrderDAO {
         order.setTrackingNumber(rs.getString("o.tracking_number"));
         order.setNotes(rs.getString("o.notes"));
         
-        User user = new User();
-        user.setId(rs.getInt("u.id"));
-        user.setUsername(rs.getString("u.username"));
-        user.setEmail(rs.getString("u.email"));
-        user.setFirstName(rs.getString("u.first_name"));
-        user.setLastName(rs.getString("u.last_name"));
-        user.setPhone(rs.getString("u.phone"));
-        user.setRole(User.UserRole.valueOf(rs.getString("u.role")));
-        user.setActive(rs.getBoolean("u.is_active"));
-        
-        order.setUser(user);
-        
-        // Load order items
-        loadOrderItems(order);
+        // Check if user data exists
+        int userId = rs.getInt("u.id");
+        if (!rs.wasNull()) {
+            User user = new User();
+            user.setId(userId);
+            user.setUsername(rs.getString("u.username"));
+            user.setEmail(rs.getString("u.email"));
+            user.setFirstName(rs.getString("u.first_name"));
+            user.setLastName(rs.getString("u.last_name"));
+            user.setPhone(rs.getString("u.phone"));
+            user.setRole(User.UserRole.valueOf(rs.getString("u.role")));
+            user.setActive(rs.getBoolean("u.is_active"));
+            order.setUser(user);
+            System.out.println("OrderDAO.mapResultSetToOrderAndUser: Mapped user ID=" + userId + " for order ID=" + order.getId());
+        } else {
+            System.out.println("OrderDAO.mapResultSetToOrderAndUser: No user found for order ID=" + order.getId());
+        }
         
         return order;
     }
